@@ -428,7 +428,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 
 <script>
 // ── CONFIG ──
-const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'2.2',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00'};
+const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'2.3',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00'};
 let CFG=()=>{try{return{...DFLT,...JSON.parse(localStorage.getItem('hc_cfg')||'{}')}}catch(e){return{...DFLT}}};
 CFG=CFG();
 const saveCFG=()=>localStorage.setItem('hc_cfg',JSON.stringify(CFG));
@@ -447,23 +447,159 @@ let ST={
 const saveStrikes=()=>localStorage.setItem('hc_strikes',JSON.stringify(ST.strikes));
 const saveDoneNotes=()=>localStorage.setItem('hc_dn',JSON.stringify(ST.doneNotes));
 
-// ── iCAL PARSER ──
+// ── iCAL PARSER (with RRULE recurring event expansion) ──
+
+// Window for expanding recurring events: 1 month back, 3 months forward
+const EXPAND_FROM = () => { const d=new Date(); d.setMonth(d.getMonth()-1); d.setHours(0,0,0,0); return d; };
+const EXPAND_TO   = () => { const d=new Date(); d.setMonth(d.getMonth()+3); d.setHours(23,59,59,999); return d; };
+
+// Day-of-week index map used by RRULE BYDAY
+const BYDAY_MAP = {SU:0,MO:1,TU:2,WE:3,TH:4,FR:5,SA:6};
+
 function parseIcal(txt){
   const evs=[];
+  // Unfold RFC5545 line folding
   txt=txt.replace(/\r\n[ \t]/g,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
-  const blocks=txt.split('BEGIN:VEVENT');blocks.shift();
+  const blocks=txt.split('BEGIN:VEVENT'); blocks.shift();
+  const expandFrom=EXPAND_FROM(), expandTo=EXPAND_TO();
+
   for(const blk of blocks){
+    // get() handles property params e.g. DTSTART;TZID=Asia/Kolkata:20240101T090000
     const get=k=>{const m=blk.match(new RegExp(`^${k}[^:\\n]*:(.*)$`,'m'));return m?m[1].trim():''};
+
     const pd=s=>{
-      if(!s)return null;s=s.replace(/Z$/,'');
+      if(!s)return null;
+      // Strip timezone suffix — we treat all times as local
+      s=s.replace(/Z$/,'');
       if(s.includes('T'))return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8),+s.slice(9,11),+s.slice(11,13),+s.slice(13,15));
       return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8));
     };
-    const uid=get('UID'),title=(get('SUMMARY')||'').replace(/\\[,;n]/g,m=>m==='\\n'?'\n':m[1]),
-      loc=(get('LOCATION')||'').replace(/\\/g,''),desc=(get('DESCRIPTION')||'').replace(/\\n/g,'\n').replace(/\\/g,''),
-      start=pd(get('DTSTART')),end=pd(get('DTEND'));
-    if(get('STATUS')==='CANCELLED'||!start||!title)continue;
-    evs.push({uid,title,start,end:end||new Date(start.getTime()+3600000),location:loc,description:desc});
+
+    if(get('STATUS')==='CANCELLED') continue;
+
+    const uid   = get('UID');
+    const title = (get('SUMMARY')||'').replace(/\\n/g,'\n').replace(/\\,/g,',').replace(/\\/g,'');
+    const loc   = (get('LOCATION')||'').replace(/\\n/g,' ').replace(/\\/g,'');
+    const desc  = (get('DESCRIPTION')||'').replace(/\\n/g,'\n').replace(/\\/g,'');
+    const start = pd(get('DTSTART'));
+    const end   = pd(get('DTEND'));
+    const rrule = get('RRULE');
+    const exdateRaw = get('EXDATE'); // excluded dates for recurring events
+
+    if(!start||!title) continue;
+
+    const duration = end ? end.getTime()-start.getTime() : 3600000;
+
+    // Parse EXDATE — dates excluded from recurrence
+    const exDates = new Set();
+    if(exdateRaw){
+      exdateRaw.split(',').forEach(s=>{
+        const d=pd(s.trim());
+        if(d) exDates.add(d.toDateString());
+      });
+    }
+
+    // ── NON-RECURRING EVENT ──
+    if(!rrule){
+      if(start>=expandFrom && start<=expandTo){
+        evs.push({uid,title,start,end:end||new Date(start.getTime()+duration),location:loc,description:desc});
+      }
+      continue;
+    }
+
+    // ── PARSE RRULE ──
+    const rr={};
+    rrule.split(';').forEach(part=>{
+      const [k,v]=part.split('=');
+      rr[k.trim()]=v?v.trim():'';
+    });
+
+    const freq     = rr.FREQ||'';                          // DAILY WEEKLY MONTHLY YEARLY
+    const interval = parseInt(rr.INTERVAL||'1');
+    const until    = rr.UNTIL ? pd(rr.UNTIL) : null;
+    const count    = rr.COUNT ? parseInt(rr.COUNT) : null;
+    const byDay    = rr.BYDAY ? rr.BYDAY.split(',').map(s=>s.trim()) : [];
+    const byMonthDay = rr.BYMONTHDAY ? rr.BYMONTHDAY.split(',').map(Number) : [];
+
+    // Hard cap — never generate more than 500 instances per event
+    const MAX_INSTANCES = 500;
+    let instances=0;
+
+    // Clone start date as our cursor
+    let cursor = new Date(start);
+
+    while(cursor<=expandTo && instances<MAX_INSTANCES){
+      // Stop if UNTIL exceeded
+      if(until && cursor>until) break;
+      // Stop if COUNT exhausted
+      if(count && instances>=count) break;
+
+      const inWindow = cursor>=expandFrom && cursor<=expandTo;
+      const notExcluded = !exDates.has(cursor.toDateString());
+
+      if(inWindow && notExcluded){
+        const evStart = new Date(cursor);
+        const evEnd   = new Date(cursor.getTime()+duration);
+        evs.push({uid,title,start:evStart,end:evEnd,location:loc,description:desc,
+          recurring:true, instanceKey:`${uid}__${evStart.toISOString()}`});
+        instances++;
+      }
+
+      // ── ADVANCE CURSOR ──
+      if(freq==='DAILY'){
+        cursor.setDate(cursor.getDate()+interval);
+
+      } else if(freq==='WEEKLY'){
+        if(byDay.length===0){
+          cursor.setDate(cursor.getDate()+7*interval);
+        } else {
+          // Find next occurrence on any of the specified weekdays
+          cursor.setDate(cursor.getDate()+1);
+          let safetyLimit=0;
+          while(safetyLimit<700){
+            safetyLimit++;
+            const dow=cursor.getDay();
+            const dayNames=['SU','MO','TU','WE','TH','FR','SA'];
+            if(byDay.some(bd=>bd.slice(-2)===dayNames[dow])){
+              // Check we're on the right week interval from start
+              const weekDiff=Math.round((cursor-start)/(7*86400000));
+              if(weekDiff%interval===0) break;
+            }
+            cursor.setDate(cursor.getDate()+1);
+          }
+        }
+
+      } else if(freq==='MONTHLY'){
+        if(byMonthDay.length>0){
+          // e.g. BYMONTHDAY=15 — same day each month
+          cursor.setMonth(cursor.getMonth()+interval);
+          cursor.setDate(byMonthDay[0]);
+        } else if(byDay.length>0){
+          // e.g. BYDAY=2MO — second Monday of month
+          const bd=byDay[0];
+          const nth=parseInt(bd)||1;
+          const dayName=bd.slice(-2);
+          const targetDow=BYDAY_MAP[dayName]??1;
+          cursor.setMonth(cursor.getMonth()+interval);
+          cursor.setDate(1);
+          let count2=0,safetyLimit=0;
+          while(safetyLimit<31){
+            safetyLimit++;
+            if(cursor.getDay()===targetDow){ count2++; if(count2===nth) break; }
+            cursor.setDate(cursor.getDate()+1);
+          }
+        } else {
+          cursor.setMonth(cursor.getMonth()+interval);
+        }
+
+      } else if(freq==='YEARLY'){
+        cursor.setFullYear(cursor.getFullYear()+interval);
+
+      } else {
+        // Unknown frequency — stop to avoid infinite loop
+        break;
+      }
+    }
   }
   return evs;
 }
@@ -486,7 +622,10 @@ async function syncAll(){
   for(let i=0;i<CFG.profiles.length;i++){
     const p=CFG.profiles[i];if(!p.icalUrl)continue;
     const items=await fetchIcal(p.icalUrl);
-    for(const ev of items)all.push({...ev,profileIdx:i,id:`${i}__${ev.uid}`,struckOut:ST.strikes.includes(`${i}__${ev.uid}`)});
+    for(const ev of items){
+      const id=ev.recurring ? `${i}__${ev.instanceKey}` : `${i}__${ev.uid}`;
+      all.push({...ev,profileIdx:i,id,struckOut:ST.strikes.includes(id)});
+    }
   }
   ST.events=all;
   if(CFG.notesUrl){
