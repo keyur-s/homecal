@@ -34,7 +34,8 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 .ft-btn{width:52px;border-radius:var(--radius-sm);border:1.5px solid rgba(52,211,153,.35);
   background:rgba(52,211,153,.08);color:#34d399;cursor:pointer;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:2px;font-size:8px;font-family:var(--font-body);
-  font-weight:700;padding:6px 0;transition:all .15s ease;letter-spacing:.03em;text-align:center;line-height:1.3}
+  font-weight:700;padding:6px 0;transition:all .15s ease;letter-spacing:.03em;text-align:center;
+  line-height:1.3;text-decoration:none;-webkit-user-select:none;user-select:none}
 .ft-btn svg{width:20px;height:20px;stroke:#34d399;fill:none;stroke-width:1.8;flex-shrink:0}
 .ft-btn:hover{background:rgba(52,211,153,.2);border-color:#34d399}
 .ft-btn:active{background:#34d399;color:#fff}
@@ -428,7 +429,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 
 <script>
 // ── CONFIG ──
-const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'2.4',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00'};
+const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'2.5',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00'};
 let CFG=()=>{try{return{...DFLT,...JSON.parse(localStorage.getItem('hc_cfg')||'{}')}}catch(e){return{...DFLT}}};
 CFG=CFG();
 const saveCFG=()=>localStorage.setItem('hc_cfg',JSON.stringify(CFG));
@@ -881,16 +882,14 @@ function renderFacetimeButtons(){
   const ft=CFG.facetime||[];
   ft.forEach(f=>{
     if(!f.contact)return;
-    const btn=document.createElement('button');
+    const contact=encodeURIComponent(f.contact);
+    // Must use <a href="facetime://"> not window.location.href
+    // Guided Access blocks JS navigation but honours user-tapped anchor links
+    const btn=document.createElement('a');
+    btn.href=`facetime://${contact}`;
     btn.className='ft-btn';
     btn.title=`FaceTime ${f.name}`;
-    // Format contact for facetime:// URL
-    const contact=encodeURIComponent(f.contact);
     btn.innerHTML=`<svg viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>${f.name}`;
-    btn.onclick=()=>{
-      // facetime:// triggers iOS FaceTime directly, no login needed
-      window.location.href=`facetime://${contact}`;
-    };
     wrap.appendChild(btn);
   });
 }
