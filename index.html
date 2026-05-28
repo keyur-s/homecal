@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<!-- Standalone web app mode — removes Safari address bar and tabs when launched from home screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="HomeCal">
+<meta name="mobile-web-app-capable" content="yes">
 <title>HomeCal</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -429,7 +434,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 
 <script>
 // ── CONFIG ──
-const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'2.5',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00'};
+const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'2.6',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00'};
 let CFG=()=>{try{return{...DFLT,...JSON.parse(localStorage.getItem('hc_cfg')||'{}')}}catch(e){return{...DFLT}}};
 CFG=CFG();
 const saveCFG=()=>localStorage.setItem('hc_cfg',JSON.stringify(CFG));
@@ -876,6 +881,9 @@ function saveSettings(){
 function tryLaunch(){document.getElementById('setup-screen').classList.remove('open');if(!CFG.profiles.some(p=>p.icalUrl)){openSettings();return;}syncAll();}
 
 // ── FACETIME BUTTONS ──
+// Detect if running as standalone home screen app (no Safari UI)
+const isStandalone = () => window.navigator.standalone === true;
+
 function renderFacetimeButtons(){
   const wrap=document.getElementById('ft-buttons');
   wrap.innerHTML='';
@@ -883,14 +891,29 @@ function renderFacetimeButtons(){
   ft.forEach(f=>{
     if(!f.contact)return;
     const contact=encodeURIComponent(f.contact);
-    // Must use <a href="facetime://"> not window.location.href
-    // Guided Access blocks JS navigation but honours user-tapped anchor links
-    const btn=document.createElement('a');
-    btn.href=`facetime://${contact}`;
-    btn.className='ft-btn';
-    btn.title=`FaceTime ${f.name}`;
-    btn.innerHTML=`<svg viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>${f.name}`;
-    wrap.appendChild(btn);
+    if(isStandalone()){
+      // Standalone mode: use <a> tag BUT intercept with JS to avoid dropping back to Safari
+      // In standalone, window.open with _self works without triggering Safari
+      const btn=document.createElement('a');
+      btn.href=`facetime://${contact}`;
+      btn.className='ft-btn';
+      btn.title=`FaceTime ${f.name}`;
+      btn.innerHTML=`<svg viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>${f.name}`;
+      btn.addEventListener('click', e=>{
+        e.preventDefault();
+        window.location.href=`facetime://${contact}`;
+      });
+      wrap.appendChild(btn);
+    } else {
+      // Safari / Guided Access: use plain <a> tag — direct user tap on href
+      // Guided Access allows this; JS navigation is blocked
+      const btn=document.createElement('a');
+      btn.href=`facetime://${contact}`;
+      btn.className='ft-btn';
+      btn.title=`FaceTime ${f.name}`;
+      btn.innerHTML=`<svg viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>${f.name}`;
+      wrap.appendChild(btn);
+    }
   });
 }
 
