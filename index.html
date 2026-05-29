@@ -14,7 +14,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0f0f13;--surface:#1a1a22;--surface2:#23232f;--surface3:#2d2d3a;
-  --border:#33334a;--text:#e8e8f0;--text2:#9090aa;--text3:#5a5a72;
+  --border:#33334a;--text:#f0f0fa;--text2:#b0b0cc;--text3:#7070a0;
   --accent:#7c6aff;--accent2:#ff6a9a;--success:#4ade80;--warn:#fbbf24;--danger:#f87171;
   --radius:14px;--radius-sm:8px;
   --font-display:'DM Serif Display',serif;--font-body:'DM Sans',sans-serif;
@@ -529,7 +529,7 @@ body.light .theme-btn::after{transform:translateX(16px)}
 
 <script>
 // ── CONFIG ──
-const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'3.1',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00',alertTone:'1',settingsPin:'1234',theme:'dark'};
+const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'3.2',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00',alertTone:'1',settingsPin:'1234',theme:'dark'};
 let CFG=()=>{try{return{...DFLT,...JSON.parse(localStorage.getItem('hc_cfg')||'{}')}}catch(e){return{...DFLT}}};
 CFG=CFG();
 const saveCFG=()=>localStorage.setItem('hc_cfg',JSON.stringify(CFG));
