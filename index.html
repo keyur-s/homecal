@@ -20,6 +20,24 @@
   --font-display:'DM Serif Display',serif;--font-body:'DM Sans',sans-serif;
   --sidebar-w:72px;--footer-h:30px;
 }
+/* Light mode override */
+body.light{
+  --bg:#f0f0f5;--surface:#ffffff;--surface2:#f5f5fa;--surface3:#e8e8f0;
+  --border:#d0d0e0;--text:#1a1a2e;--text2:#5a5a7a;--text3:#9090aa;
+}
+/* PIN overlay */
+#pin-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);
+  z-index:400;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+#pin-overlay.open{display:flex}
+.pin-title{font-family:var(--font-display);font-size:22px;color:#fff}
+.pin-dots{display:flex;gap:12px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:transparent;transition:background .15s}
+.pin-dot.filled{background:#fff;border-color:#fff}
+.pin-pad{display:grid;grid-template-columns:repeat(3,64px);gap:10px}
+.pin-key{width:64px;height:64px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);
+  color:#fff;font-size:22px;font-family:var(--font-body);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s}
+.pin-key:hover{background:rgba(255,255,255,.18)}
+.pin-error{font-size:12px;color:var(--danger);min-height:16px;text-align:center}
 html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--text);
   font-family:var(--font-body);font-size:14px;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 #app{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:1fr var(--footer-h);height:100vh;width:100vw}
@@ -41,13 +59,16 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
   align-items:center;justify-content:center;gap:2px;font-size:8px;font-family:var(--font-body);
   font-weight:700;padding:6px 0;transition:all .15s ease;letter-spacing:.03em;text-align:center;
   line-height:1.3;text-decoration:none;-webkit-user-select:none;user-select:none}
-.ft-btn svg{width:20px;height:20px;stroke:#34d399;fill:none;stroke-width:1.8;flex-shrink:0}
+.ft-btn svg{width:22px;height:22px;stroke:#34d399;fill:none;stroke-width:1.6;flex-shrink:0}
 .ft-btn:hover{background:rgba(52,211,153,.2);border-color:#34d399}
 .ft-btn:active{background:#34d399;color:#fff}
 .ft-btn:active svg{stroke:#fff}
-#battery-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;color:var(--text3)}
-#bat-bar{width:22px;height:11px;border:1.5px solid var(--text3);border-radius:3px;overflow:hidden}
-#bat-fill{height:100%;background:var(--success);transition:width .5s,background .5s}
+.theme-btn{width:36px;height:20px;border-radius:10px;border:none;cursor:pointer;
+  background:var(--border);position:relative;transition:background .2s;flex-shrink:0}
+.theme-btn::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;
+  background:#fff;top:3px;left:3px;transition:transform .2s}
+body.light .theme-btn{background:var(--accent)}
+body.light .theme-btn::after{transform:translateX(16px)}
 #main{grid-column:2;grid-row:1;overflow:hidden;position:relative}
 .view{display:none;width:100%;height:100%;position:absolute;top:0;left:0}
 .view.active{display:flex}
@@ -122,7 +143,8 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 .w-chip{font-size:9px;padding:2px 4px;border-radius:4px;margin-bottom:2px;color:#fff;
   font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 /* ── TIMELINE VIEW (View B) ── */
-.timeline-outer{flex:1;overflow-y:auto;overflow-x:hidden;position:relative;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.timeline-outer{flex:1;overflow-y:auto;overflow-x:hidden;position:relative;scrollbar-width:thin;
+  scrollbar-color:var(--border) transparent;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
 .timeline-outer::-webkit-scrollbar{width:4px}
 .timeline-outer::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .timeline-inner{position:relative;display:flex;}
@@ -206,6 +228,30 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 </head>
 <body>
 
+<!-- PIN LOCK OVERLAY -->
+<div id="pin-overlay">
+  <div class="pin-title">Enter PIN to access Settings</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-error" id="pin-error"></div>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pinKey('1')">1</button>
+    <button class="pin-key" onclick="pinKey('2')">2</button>
+    <button class="pin-key" onclick="pinKey('3')">3</button>
+    <button class="pin-key" onclick="pinKey('4')">4</button>
+    <button class="pin-key" onclick="pinKey('5')">5</button>
+    <button class="pin-key" onclick="pinKey('6')">6</button>
+    <button class="pin-key" onclick="pinKey('7')">7</button>
+    <button class="pin-key" onclick="pinKey('8')">8</button>
+    <button class="pin-key" onclick="pinKey('9')">9</button>
+    <button class="pin-key" onclick="pinKey('back')" style="font-size:16px">⌫</button>
+    <button class="pin-key" onclick="pinKey('0')">0</button>
+    <button class="pin-key" onclick="closePinOverlay()" style="font-size:14px;color:rgba(255,255,255,.5)">✕</button>
+  </div>
+</div>
+
 <div id="setup-screen" class="open">
   <div class="setup-logo">HomeCal</div>
   <p class="setup-sub">Family schedule display — no login needed.<br>Uses your Google Calendar private iCal links.</p>
@@ -255,6 +301,32 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
     <h3>Notes Calendar iCal Link (optional)</h3>
     <input class="form-input" id="s-notes" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics">
     <div class="s-note">Create a Google Calendar called "Notes". Add events as notes. Paste its iCal link here.</div>
+  </div>
+  <div class="s-section">
+    <h3>Alert Tone</h3>
+    <div class="row2">
+      <div class="form-row">
+        <label class="form-label">Tone style</label>
+        <select class="form-input" id="s-tone">
+          <option value="1">1 — Repeating beeps (urgent)</option>
+          <option value="2">2 — Rising chime (pleasant)</option>
+          <option value="3">3 — Pulsing tone (continuous)</option>
+          <option value="4">4 — Double beep (repeating)</option>
+        </select>
+      </div>
+      <div class="form-row" style="display:flex;align-items:flex-end">
+        <button class="btn" onclick="testAlertTone()" style="height:38px">▶ Test</button>
+      </div>
+    </div>
+    <div class="s-note">Tone plays 3 times, 45 seconds each cycle, until dismissed. Spoken event name plays on snooze/dismiss.</div>
+  </div>
+  <div class="s-section">
+    <h3>Settings PIN</h3>
+    <div class="row2">
+      <div class="form-row"><label class="form-label">New PIN (4 digits)</label><input class="form-input" id="s-pin" type="password" maxlength="4" placeholder="••••" inputmode="numeric"></div>
+      <div class="form-row"><label class="form-label">Confirm PIN</label><input class="form-input" id="s-pin2" type="password" maxlength="4" placeholder="••••" inputmode="numeric"></div>
+    </div>
+    <div class="s-note">Triple-tap the HC logo to open settings. Leave blank to keep current PIN. Default PIN is 1234.</div>
   </div>
   <div class="s-section">
     <h3>Alert Settings</h3>
@@ -330,7 +402,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 
 <div id="app">
   <nav id="sidebar">
-    <div class="logo">HC</div>
+    <div class="logo" id="hc-logo" style="cursor:pointer;user-select:none" title="Tap 3× for settings">HC</div>
     <button class="sb-btn active" id="btn-vA" onclick="setView('A')" title="Day + Notes">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="13" y="3" width="8" height="18" rx="1.5"/></svg>A
     </button>
@@ -347,17 +419,15 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
     <button class="sb-btn" onclick="syncNow()" title="Sync">
       <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Sync
     </button>
-    <button class="sb-btn" onclick="openSettings()" title="Settings">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Set
-    </button>
+    <!-- Theme toggle -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0">
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark"></button>
+      <span style="font-size:8px;color:var(--text3);font-weight:500">Theme</span>
+    </div>
     <div class="sb-spacer"></div>
     <div class="sb-divider"></div>
     <div id="ft-buttons"></div>
     <div class="sb-divider"></div>
-    <div id="battery-wrap">
-      <div id="bat-bar"><div id="bat-fill" style="width:80%"></div></div>
-      <span id="bat-pct">--%</span>
-    </div>
   </nav>
 
   <main id="main">
@@ -459,7 +529,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 
 <script>
 // ── CONFIG ──
-const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'3.0',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00'};
+const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'3.1',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00',alertTone:'1',settingsPin:'1234',theme:'dark'};
 let CFG=()=>{try{return{...DFLT,...JSON.parse(localStorage.getItem('hc_cfg')||'{}')}}catch(e){return{...DFLT}}};
 CFG=CFG();
 const saveCFG=()=>localStorage.setItem('hc_cfg',JSON.stringify(CFG));
@@ -573,7 +643,8 @@ function parseIcal(txt){
     const MAX_INSTANCES = 500;
     let instances=0;
 
-    // Clone start date as our cursor
+    // Clone start date as our cursor — preserve local time components from correctly-parsed base
+    const baseH=start.getHours(), baseM=start.getMinutes(), baseS=start.getSeconds();
     let cursor = new Date(start);
 
     while(cursor<=expandTo && instances<MAX_INSTANCES){
@@ -596,10 +667,11 @@ function parseIcal(txt){
       // ── ADVANCE CURSOR ──
       if(freq==='DAILY'){
         cursor.setDate(cursor.getDate()+interval);
-
+        cursor.setHours(baseH,baseM,baseS,0);
       } else if(freq==='WEEKLY'){
         if(byDay.length===0){
           cursor.setDate(cursor.getDate()+7*interval);
+          cursor.setHours(baseH,baseM,baseS,0);
         } else {
           // Find next occurrence on any of the specified weekdays
           cursor.setDate(cursor.getDate()+1);
@@ -615,15 +687,13 @@ function parseIcal(txt){
             }
             cursor.setDate(cursor.getDate()+1);
           }
+          cursor.setHours(baseH,baseM,baseS,0);
         }
-
       } else if(freq==='MONTHLY'){
         if(byMonthDay.length>0){
-          // e.g. BYMONTHDAY=15 — same day each month
           cursor.setMonth(cursor.getMonth()+interval);
           cursor.setDate(byMonthDay[0]);
         } else if(byDay.length>0){
-          // e.g. BYDAY=2MO — second Monday of month
           const bd=byDay[0];
           const nth=parseInt(bd)||1;
           const dayName=bd.slice(-2);
@@ -639,10 +709,10 @@ function parseIcal(txt){
         } else {
           cursor.setMonth(cursor.getMonth()+interval);
         }
-
+        cursor.setHours(baseH,baseM,baseS,0);
       } else if(freq==='YEARLY'){
         cursor.setFullYear(cursor.getFullYear()+interval);
-
+        cursor.setHours(baseH,baseM,baseS,0);
       } else {
         // Unknown frequency — stop to avoid infinite loop
         break;
@@ -714,21 +784,152 @@ function fireAlert(ev,ps,lead,key){
   document.getElementById('al-title').textContent=ev.title;
   document.getElementById('al-profiles').textContent=names;
   document.getElementById('alert-overlay').classList.add('open');
-  speak(`Alert. ${ev.title}. In ${lead} minutes. For ${names}.`);
+  startAlertTone(ev.title, names);
 }
-function snoozeAlert(m){if(ST.alertKey){ST.snoozed[ST.alertKey]=Date.now()+m*60000;ST.firedAlerts.delete(ST.alertKey);}document.getElementById('alert-overlay').classList.remove('open');speak(`Snoozed for ${m} minutes.`);checkNightMode();}
-function dismissAlert(){document.getElementById('alert-overlay').classList.remove('open');checkNightMode();}
+function snoozeAlert(m){
+  stopAlertTone();
+  if(ST.alertKey){ST.snoozed[ST.alertKey]=Date.now()+m*60000;ST.firedAlerts.delete(ST.alertKey);}
+  document.getElementById('alert-overlay').classList.remove('open');
+  speak(`Snoozed for ${m} minutes.`);
+  checkNightMode();
+}
+function dismissAlert(){
+  stopAlertTone();
+  document.getElementById('alert-overlay').classList.remove('open');
+  speak('Alert dismissed.');
+  checkNightMode();
+}
 
-// ── TTS ──
-function speak(t){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=0.9;u.volume=1;window.speechSynthesis.speak(u);}
+// ── WEB AUDIO ALERT ENGINE ──
+// Pre-unlocked AudioContext via user gesture at startup
+let _audioCtx = null;
+let _alertInterval = null;
+let _alertPlaying = false;
 
-// ── BATTERY ──
-async function initBattery(){
-  if(!navigator.getBattery)return;
-  try{const b=await navigator.getBattery();
-    const u=()=>{const p=Math.round(b.level*100);document.getElementById('bat-pct').textContent=p+'%';const f=document.getElementById('bat-fill');f.style.width=p+'%';f.style.background=p<=20?'#f87171':p<=40?'#fbbf24':'#4ade80';if(p<=20&&!b.charging)speak(`Battery low. ${p} percent. Please charge.`);};
-    u();b.addEventListener('levelchange',u);b.addEventListener('chargingchange',u);
-  }catch(e){}
+function unlockAudio(){
+  if(_audioCtx) return;
+  try{ _audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+}
+
+function playTone(style){
+  if(!_audioCtx) return;
+  const ctx = _audioCtx;
+  const now = ctx.currentTime;
+
+  const scheduleBeep=(freq,start,dur,vol=0.6)=>{
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.frequency.value=freq;
+    gain.gain.setValueAtTime(0,start);
+    gain.gain.linearRampToValueAtTime(vol,start+0.01);
+    gain.gain.linearRampToValueAtTime(0,start+dur-0.01);
+    osc.start(start);osc.stop(start+dur);
+  };
+
+  if(style==='1'){
+    // Urgent repeating beeps — three quick high beeps
+    for(let i=0;i<3;i++){ scheduleBeep(880,now+i*0.3,0.2,0.7); }
+  } else if(style==='2'){
+    // Rising chime — ascending notes
+    [523,659,784,1047].forEach((f,i)=>scheduleBeep(f,now+i*0.18,0.25,0.55));
+  } else if(style==='3'){
+    // Pulsing tone — slow alternating low/high
+    for(let i=0;i<4;i++){
+      scheduleBeep(i%2===0?440:550,now+i*0.4,0.35,0.6);
+    }
+  } else {
+    // Double beep — two pairs
+    [0,0.2,0.6,0.8].forEach(t=>scheduleBeep(660,now+t,0.18,0.65));
+  }
+}
+
+function testAlertTone(){
+  unlockAudio();
+  const style=document.getElementById('s-tone')?.value||CFG.alertTone||'1';
+  playTone(style);
+}
+
+function startAlertTone(title, names){
+  if(!_audioCtx){ unlockAudio(); }
+  _alertPlaying=true;
+  let cycles=0;
+  const fire=()=>{
+    if(!_alertPlaying||cycles>=3) return;
+    playTone(CFG.alertTone||'1');
+    cycles++;
+  };
+  fire(); // play immediately
+  _alertInterval=setInterval(()=>{
+    if(!_alertPlaying||cycles>=3){ clearInterval(_alertInterval); return; }
+    fire();
+  }, 45000); // repeat every 45s, max 3 times
+}
+
+function stopAlertTone(){
+  _alertPlaying=false;
+  if(_alertInterval){ clearInterval(_alertInterval); _alertInterval=null; }
+}
+
+// ── TTS (for snooze/dismiss confirmation only) ──
+function speak(t){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);
+  u.rate=0.9;u.volume=1;
+  window.speechSynthesis.speak(u);
+}
+
+// ── THEME ──
+function toggleTheme(){
+  CFG.theme = document.body.classList.contains('light') ? 'dark' : 'light';
+  applyTheme();
+  saveCFG();
+}
+function applyTheme(){
+  document.body.classList.toggle('light', CFG.theme==='light');
+}
+
+// ── PIN / SETTINGS LOCK ──
+let _logoTapCount=0, _logoTapTimer=null;
+function initLogoTap(){
+  document.getElementById('hc-logo').addEventListener('click',()=>{
+    _logoTapCount++;
+    clearTimeout(_logoTapTimer);
+    if(_logoTapCount>=3){ _logoTapCount=0; showPinOverlay(); return; }
+    _logoTapTimer=setTimeout(()=>{ _logoTapCount=0; },600);
+  });
+}
+let _pinEntry='';
+function showPinOverlay(){
+  _pinEntry='';
+  updatePinDots();
+  document.getElementById('pin-error').textContent='';
+  document.getElementById('pin-overlay').classList.add('open');
+}
+function closePinOverlay(){
+  _pinEntry='';
+  document.getElementById('pin-overlay').classList.remove('open');
+}
+function pinKey(k){
+  if(k==='back'){ _pinEntry=_pinEntry.slice(0,-1); updatePinDots(); return; }
+  if(_pinEntry.length>=4) return;
+  _pinEntry+=k;
+  updatePinDots();
+  if(_pinEntry.length===4){
+    if(_pinEntry===(CFG.settingsPin||'1234')){
+      closePinOverlay();
+      openSettings();
+    } else {
+      document.getElementById('pin-error').textContent='Incorrect PIN';
+      setTimeout(()=>{ _pinEntry=''; updatePinDots(); document.getElementById('pin-error').textContent=''; },800);
+    }
+  }
+}
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    document.getElementById('pd'+i).classList.toggle('filled',i<_pinEntry.length);
+  }
 }
 
 // ── VIEWS ──
@@ -934,14 +1135,28 @@ function updateNowLine(){
       line.style.display='none';
     }
   });
-  // Scroll both panes to show current time on first load
-  if(isToday && ST._tlScrolledToNow!==d.toDateString()){
+  // Smart auto-scroll: today → current time at 30% from top; other dates → first event or 8am
+  if(ST._tlScrolledToNow!==d.toDateString()){
     ST._tlScrolledToNow=d.toDateString();
-    const h2=now.getHours()+now.getMinutes()/60;
-    const y=Math.max(0,(h2-TL_START_H)*TL_HOUR_PX - 80);
+    let targetY;
+    if(isToday){
+      // Position so current time line sits 30% from top of visible area
+      const nowY=(h-TL_START_H)*TL_HOUR_PX;
+      const visibleH=document.getElementById('vB-scroll1')?.clientHeight||400;
+      targetY=Math.max(0, nowY - visibleH*0.30);
+    } else {
+      // Non-today: scroll to first event of the day, or 8am if no events
+      const allEvs=[...evsForDay(d,[0,1,2,3])];
+      if(allEvs.length>0){
+        const firstH=allEvs[0].start.getHours()+allEvs[0].start.getMinutes()/60;
+        targetY=Math.max(0,(firstH-TL_START_H)*TL_HOUR_PX - 32);
+      } else {
+        targetY=(8-TL_START_H)*TL_HOUR_PX; // default 8am
+      }
+    }
     ['vB-scroll1','vB-scroll2'].forEach(id=>{
       const el=document.getElementById(id);
-      if(el) el.scrollTop=y;
+      if(el) el.scrollTop=targetY;
     });
   }
 }
@@ -1042,6 +1257,9 @@ function openSettings(){
   document.getElementById('s-proxy').value=CFG.proxy||'https://corsproxy.io/?';
   document.getElementById('s-night-from').value=CFG.nightFrom||'22:00';
   document.getElementById('s-night-to').value=CFG.nightTo||'06:00';
+  document.getElementById('s-tone').value=CFG.alertTone||'1';
+  document.getElementById('s-pin').value='';
+  document.getElementById('s-pin2').value='';
   // FaceTime contacts
   const ft=CFG.facetime||[{name:'Mum',contact:''},{name:'Dad',contact:''}];
   document.getElementById('ft-n0').value=ft[0]?.name||'';
@@ -1069,6 +1287,10 @@ function saveSettings(){
   CFG.proxy=document.getElementById('s-proxy').value.trim()||'https://corsproxy.io/?';
   CFG.nightFrom=document.getElementById('s-night-from').value||'22:00';
   CFG.nightTo=document.getElementById('s-night-to').value||'06:00';
+  CFG.alertTone=document.getElementById('s-tone').value||'1';
+  const p1=document.getElementById('s-pin').value;
+  const p2=document.getElementById('s-pin2').value;
+  if(p1&&p1===p2&&p1.length===4) CFG.settingsPin=p1;
   CFG.facetime=[
     {name:document.getElementById('ft-n0').value.trim()||'Mum', contact:document.getElementById('ft-c0').value.trim()},
     {name:document.getElementById('ft-n1').value.trim()||'Dad', contact:document.getElementById('ft-c1').value.trim()}
@@ -1084,39 +1306,42 @@ function saveSettings(){
 function tryLaunch(){document.getElementById('setup-screen').classList.remove('open');if(!CFG.profiles.some(p=>p.icalUrl)){openSettings();return;}syncAll();}
 
 // ── FACETIME BUTTONS ──
-// Detect if running as standalone home screen app (no Safari UI)
 const isStandalone = () => window.navigator.standalone === true;
+
+// Female person SVG (longer hair silhouette)
+const SVG_FEMALE=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+  <circle cx="12" cy="7" r="3.5"/>
+  <path d="M9 7c0 0-.5-2 1-3s3.5-.5 4 0 1 3 1 3"/>
+  <path d="M5 21c0-4 3-7 7-7s7 3 7 7"/>
+  <path d="M9.5 14.5l1 2.5 1.5-1.5 1.5 1.5 1-2.5"/>
+</svg>`;
+
+// Male person SVG (standard silhouette)
+const SVG_MALE=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+  <circle cx="12" cy="7" r="3.5"/>
+  <path d="M5 21c0-4 3-7 7-7s7 3 7 7"/>
+  <path d="M15 3l3-2m0 0l-1.5 2.5M18 1l-1 3"/>
+</svg>`;
+
+const FT_ICONS=[SVG_FEMALE, SVG_MALE];
 
 function renderFacetimeButtons(){
   const wrap=document.getElementById('ft-buttons');
   wrap.innerHTML='';
   const ft=CFG.facetime||[];
-  ft.forEach(f=>{
+  ft.forEach((f,idx)=>{
     if(!f.contact)return;
     const contact=encodeURIComponent(f.contact);
+    const icon=FT_ICONS[idx]||SVG_MALE;
+    const btn=document.createElement('a');
+    btn.href=`facetime://${contact}`;
+    btn.className='ft-btn';
+    btn.title=`FaceTime ${f.name}`;
+    btn.innerHTML=icon+`<span>${f.name}</span>`;
     if(isStandalone()){
-      // Standalone mode: use <a> tag BUT intercept with JS to avoid dropping back to Safari
-      // In standalone, window.open with _self works without triggering Safari
-      const btn=document.createElement('a');
-      btn.href=`facetime://${contact}`;
-      btn.className='ft-btn';
-      btn.title=`FaceTime ${f.name}`;
-      btn.innerHTML=`<svg viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>${f.name}`;
-      btn.addEventListener('click', e=>{
-        e.preventDefault();
-        window.location.href=`facetime://${contact}`;
-      });
-      wrap.appendChild(btn);
-    } else {
-      // Safari / Guided Access: use plain <a> tag — direct user tap on href
-      // Guided Access allows this; JS navigation is blocked
-      const btn=document.createElement('a');
-      btn.href=`facetime://${contact}`;
-      btn.className='ft-btn';
-      btn.title=`FaceTime ${f.name}`;
-      btn.innerHTML=`<svg viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>${f.name}`;
-      wrap.appendChild(btn);
+      btn.addEventListener('click',e=>{e.preventDefault();window.location.href=`facetime://${contact}`;});
     }
+    wrap.appendChild(btn);
   });
 }
 
@@ -1168,10 +1393,21 @@ function updateFooter(){
 // ── INIT ──
 function init(){
   if(navigator.wakeLock){const rw=()=>navigator.wakeLock.request('screen').catch(()=>{});rw();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')rw();});}
-  initBattery();updateFooter();renderFacetimeButtons();
+  applyTheme();
+  updateFooter();
+  renderFacetimeButtons();
+  initLogoTap();
+  // Unlock Web Audio on first user touch — must happen via gesture
+  document.addEventListener('touchstart', unlockAudio, {once:true});
+  document.addEventListener('click', unlockAudio, {once:true});
   checkNightMode();
   setInterval(()=>{ checkNightMode(); updateNowLine(); }, 60000);
-  if(CFG.profiles.some(p=>p.icalUrl)){document.getElementById('setup-screen').classList.remove('open');renderCurrent();syncAll();setInterval(syncAll,(CFG.syncMins||5)*60000);setInterval(checkAlerts,30000);}
+  if(CFG.profiles.some(p=>p.icalUrl)){
+    document.getElementById('setup-screen').classList.remove('open');
+    renderCurrent();syncAll();
+    setInterval(syncAll,(CFG.syncMins||5)*60000);
+    setInterval(checkAlerts,30000);
+  }
 }
 window.addEventListener('load',init);
 </script>
