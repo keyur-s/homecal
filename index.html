@@ -121,7 +121,26 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 .w-hdr.today .w-dname,.w-hdr.today .w-dnum{color:#fff}
 .w-chip{font-size:9px;padding:2px 4px;border-radius:4px;margin-bottom:2px;color:#fff;
   font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
-.notes-scroll{flex:1;overflow-y:auto;padding:10px}
+/* ── TIMELINE VIEW (View B) ── */
+.timeline-outer{flex:1;overflow-y:auto;overflow-x:hidden;position:relative;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.timeline-outer::-webkit-scrollbar{width:4px}
+.timeline-outer::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.timeline-inner{position:relative;display:flex;}
+.timeline-hour-col{width:44px;flex-shrink:0;position:relative;}
+.timeline-hour-label{position:absolute;right:8px;font-size:9px;color:var(--text3);font-weight:600;
+  transform:translateY(-50%);white-space:nowrap;letter-spacing:.03em}
+.timeline-events-col{flex:1;position:relative;border-left:1px solid var(--border);}
+.timeline-hour-line{position:absolute;left:0;right:0;height:1px;background:var(--border);opacity:.5;}
+.timeline-half-line{position:absolute;left:0;right:0;height:1px;background:var(--border);opacity:.2;border-top:1px dashed var(--border);}
+.tl-event{position:absolute;left:3px;right:3px;border-radius:6px;padding:4px 6px;overflow:hidden;
+  cursor:pointer;transition:opacity .12s;display:flex;flex-direction:column;justify-content:flex-start;min-height:18px;}
+.tl-event:hover{opacity:.85;z-index:10;}
+.tl-event-title{font-size:11px;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3}
+.tl-event-time{font-size:9px;color:rgba(255,255,255,.8);font-weight:500;white-space:nowrap;margin-top:1px}
+.tl-now-line{position:absolute;left:0;right:0;height:2px;background:#ef4444;z-index:20;pointer-events:none;}
+.tl-now-dot{position:absolute;left:-4px;top:-4px;width:9px;height:9px;border-radius:50%;background:#ef4444;}
+.tl-event.struck{opacity:.3;}
+.tl-event.struck .tl-event-title{text-decoration:line-through;}
 .note-card{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 36px 10px 12px;
   margin-bottom:7px;border-left:3px solid var(--warn);position:relative}
 .note-card.done{opacity:.38}
@@ -369,27 +388,33 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
     </div>
 
     <div class="view" id="view-B">
-      <div class="split">
-        <div class="pane">
-          <div class="pane-header">
-            <div class="pane-title" id="vB-n1">Profile 1</div>
-            <div class="pane-controls">
+      <div style="display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden">
+        <!-- Shared header row -->
+        <div style="display:flex;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surface)">
+          <div style="flex:1;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;gap:8px;border-right:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="pane-title" id="vB-n1">Profile 1</div>
               <select class="btn" id="vB-s1" onchange="renderB()"></select>
-              <div class="date-nav">
-                <button class="dnav" onclick="navDay(-1,'B')">‹</button>
-                <span class="date-lbl" id="vB-date"></span>
-                <button class="dnav" onclick="navDay(1,'B')">›</button>
-              </div>
+            </div>
+            <div class="date-nav">
+              <button class="dnav" onclick="navDay(-1,'B')">‹</button>
+              <span class="date-lbl" id="vB-date"></span>
+              <button class="dnav" onclick="navDay(1,'B')">›</button>
             </div>
           </div>
-          <div class="day-scroll" id="vB-sc1"></div>
-        </div>
-        <div class="pane">
-          <div class="pane-header">
+          <div style="flex:1;display:flex;align-items:center;padding:8px 12px;gap:8px">
             <div class="pane-title" id="vB-n2">Profile 2</div>
             <select class="btn" id="vB-s2" onchange="renderB()"></select>
           </div>
-          <div class="day-scroll" id="vB-sc2"></div>
+        </div>
+        <!-- Synchronized scroll area -->
+        <div style="display:flex;flex:1;overflow:hidden">
+          <div class="timeline-outer" id="vB-scroll1" style="flex:1;border-right:1px solid var(--border)">
+            <div class="timeline-inner" id="vB-tl1"></div>
+          </div>
+          <div class="timeline-outer" id="vB-scroll2" style="flex:1">
+            <div class="timeline-inner" id="vB-tl2"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -434,7 +459,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 
 <script>
 // ── CONFIG ──
-const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'2.9',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00'};
+const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'3.0',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00'};
 let CFG=()=>{try{return{...DFLT,...JSON.parse(localStorage.getItem('hc_cfg')||'{}')}}catch(e){return{...DFLT}}};
 CFG=CFG();
 const saveCFG=()=>localStorage.setItem('hc_cfg',JSON.stringify(CFG));
@@ -772,10 +797,172 @@ function buildBSels(){
   });
 }
 function renderB(){
-  const d=ST.dates.B;document.getElementById('vB-date').textContent=fmtDate(d);buildBSels();
-  const p1=parseInt(document.getElementById('vB-s1').value)||0,p2=parseInt(document.getElementById('vB-s2').value)||1;
-  ST.vbSel=[p1,p2];document.getElementById('vB-n1').textContent=CFG.profiles[p1]?.name||'';document.getElementById('vB-n2').textContent=CFG.profiles[p2]?.name||'';
-  buildDayScroll('vB-sc1',d,[p1]);buildDayScroll('vB-sc2',d,[p2]);
+  const d=ST.dates.B;
+  document.getElementById('vB-date').textContent=fmtDate(d);
+  buildBSels();
+  const p1=parseInt(document.getElementById('vB-s1').value)||0;
+  const p2=parseInt(document.getElementById('vB-s2').value)||1;
+  ST.vbSel=[p1,p2];
+  document.getElementById('vB-n1').textContent=CFG.profiles[p1]?.name||'';
+  document.getElementById('vB-n2').textContent=CFG.profiles[p2]?.name||'';
+  buildTimeline('vB-tl1','vB-scroll1',d,[p1]);
+  buildTimeline('vB-tl2','vB-scroll2',d,[p2]);
+  syncTimelineScroll();
+  updateNowLine();
+}
+
+// ── TIMELINE BUILDER ──
+const TL_START_H = 6;   // 6am
+const TL_END_H   = 22;  // 10pm
+const TL_HOUR_PX = 64;  // pixels per hour
+const TL_TOTAL   = (TL_END_H - TL_START_H) * TL_HOUR_PX;
+
+function buildTimeline(containerId, scrollId, date, profileIdxs){
+  const container = document.getElementById(containerId);
+  container.innerHTML='';
+
+  // Hour labels column + events column side by side
+  const hourCol = document.createElement('div');
+  hourCol.className='timeline-hour-col';
+  hourCol.style.height = TL_TOTAL + 'px';
+
+  const evCol = document.createElement('div');
+  evCol.className='timeline-events-col';
+  evCol.style.height = TL_TOTAL + 'px';
+  evCol.style.position='relative';
+
+  // Draw hour lines and labels
+  for(let h=TL_START_H; h<=TL_END_H; h++){
+    const y = (h - TL_START_H) * TL_HOUR_PX;
+    // Label
+    const lbl = document.createElement('div');
+    lbl.className='timeline-hour-label';
+    lbl.style.top = y + 'px';
+    lbl.textContent = h===0?'12am':h<12?h+'am':h===12?'12pm':(h-12)+'pm';
+    hourCol.appendChild(lbl);
+    // Hour line
+    const line = document.createElement('div');
+    line.className='timeline-hour-line';
+    line.style.top = y + 'px';
+    evCol.appendChild(line);
+    // Half-hour line
+    if(h < TL_END_H){
+      const hline = document.createElement('div');
+      hline.className='timeline-half-line';
+      hline.style.top = (y + TL_HOUR_PX/2) + 'px';
+      evCol.appendChild(hline);
+    }
+  }
+
+  // Get events for this day and profiles
+  const evs = evsForDay(date, profileIdxs);
+
+  // Detect overlaps — group events into columns to render side by side
+  // Sort by start time
+  const sorted = [...evs].sort((a,b)=>a.start-b.start);
+  // Assign columns to overlapping events
+  const cols = []; // each entry is array of events in that column
+  for(const ev of sorted){
+    let placed=false;
+    for(const col of cols){
+      const last=col[col.length-1];
+      if(ev.start >= last.end){ col.push(ev); placed=true; break; }
+    }
+    if(!placed) cols.push([ev]);
+  }
+  const totalCols = cols.length || 1;
+
+  // Render each event
+  cols.forEach((col, ci)=>{
+    col.forEach(ev=>{
+      const startH = ev.start.getHours() + ev.start.getMinutes()/60;
+      const endH   = ev.end.getHours()   + ev.end.getMinutes()/60;
+      // Clamp to visible range
+      const clampStart = Math.max(startH, TL_START_H);
+      const clampEnd   = Math.min(endH,   TL_END_H);
+      if(clampEnd <= clampStart) return; // outside visible range
+
+      const top    = (clampStart - TL_START_H) * TL_HOUR_PX;
+      const height = Math.max((clampEnd - clampStart) * TL_HOUR_PX - 2, 18);
+
+      // Position within column to handle overlaps
+      const colW   = 100 / totalCols;
+      const left   = ci * colW;
+      const right  = 100 - (ci+1) * colW;
+
+      const p = CFG.profiles[ev.profileIdx];
+      const block = document.createElement('div');
+      block.className='tl-event'+(ev.struckOut?' struck':'');
+      block.style.cssText=`top:${top}px;height:${height}px;left:calc(${left}% + 3px);right:calc(${right}% + 3px);background:${p?.color||'#888'};`;
+
+      block.innerHTML=`
+        <div class="tl-event-title">${ev.title}</div>
+        ${height>28?`<div class="tl-event-time">${fmtTime(ev.start)} – ${fmtTime(ev.end)}</div>`:''}
+      `;
+      block.onclick=()=>openModal(ev);
+      evCol.appendChild(block);
+    });
+  });
+
+  // Now line placeholder (updated separately)
+  const nowLine = document.createElement('div');
+  nowLine.className='tl-now-line';
+  nowLine.id=containerId+'-nowline';
+  nowLine.innerHTML='<div class="tl-now-dot"></div>';
+  nowLine.style.display='none';
+  evCol.appendChild(nowLine);
+
+  container.appendChild(hourCol);
+  container.appendChild(evCol);
+}
+
+// ── NOW LINE ──
+function updateNowLine(){
+  if(ST.view!=='B') return;
+  const now=new Date();
+  const h=now.getHours()+now.getMinutes()/60;
+  const d=ST.dates.B;
+  const isToday=sameDay(d,now);
+  ['vB-tl1','vB-tl2'].forEach(id=>{
+    const line=document.getElementById(id+'-nowline');
+    if(!line) return;
+    if(isToday && h>=TL_START_H && h<=TL_END_H){
+      const y=(h-TL_START_H)*TL_HOUR_PX;
+      line.style.top=y+'px';
+      line.style.display='block';
+    } else {
+      line.style.display='none';
+    }
+  });
+  // Scroll both panes to show current time on first load
+  if(isToday && ST._tlScrolledToNow!==d.toDateString()){
+    ST._tlScrolledToNow=d.toDateString();
+    const h2=now.getHours()+now.getMinutes()/60;
+    const y=Math.max(0,(h2-TL_START_H)*TL_HOUR_PX - 80);
+    ['vB-scroll1','vB-scroll2'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.scrollTop=y;
+    });
+  }
+}
+
+// ── SYNCHRONIZED SCROLL ──
+let _scrollLock=false;
+function syncTimelineScroll(){
+  const s1=document.getElementById('vB-scroll1');
+  const s2=document.getElementById('vB-scroll2');
+  if(!s1||!s2) return;
+  // Remove old listeners by cloning
+  const n1=s1.cloneNode(true); s1.parentNode.replaceChild(n1,s1);
+  const n2=s2.cloneNode(true); s2.parentNode.replaceChild(n2,s2);
+  // Re-wire timeline content references after clone
+  buildTimeline('vB-tl1','vB-scroll1',ST.dates.B,[ST.vbSel[0]]);
+  buildTimeline('vB-tl2','vB-scroll2',ST.dates.B,[ST.vbSel[1]]);
+  const sc1=document.getElementById('vB-scroll1');
+  const sc2=document.getElementById('vB-scroll2');
+  sc1.addEventListener('scroll',()=>{ if(_scrollLock)return; _scrollLock=true; sc2.scrollTop=sc1.scrollTop; _scrollLock=false; });
+  sc2.addEventListener('scroll',()=>{ if(_scrollLock)return; _scrollLock=true; sc1.scrollTop=sc2.scrollTop; _scrollLock=false; });
+  updateNowLine();
 }
 
 // ── VIEW C ──
@@ -983,7 +1170,7 @@ function init(){
   if(navigator.wakeLock){const rw=()=>navigator.wakeLock.request('screen').catch(()=>{});rw();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')rw();});}
   initBattery();updateFooter();renderFacetimeButtons();
   checkNightMode();
-  setInterval(checkNightMode, 60000); // check every minute
+  setInterval(()=>{ checkNightMode(); updateNowLine(); }, 60000);
   if(CFG.profiles.some(p=>p.icalUrl)){document.getElementById('setup-screen').classList.remove('open');renderCurrent();syncAll();setInterval(syncAll,(CFG.syncMins||5)*60000);setInterval(checkAlerts,30000);}
 }
 window.addEventListener('load',init);
