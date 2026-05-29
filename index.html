@@ -434,7 +434,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 
 <script>
 // ── CONFIG ──
-const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'2.6',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00'};
+const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'2.7',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00'};
 let CFG=()=>{try{return{...DFLT,...JSON.parse(localStorage.getItem('hc_cfg')||'{}')}}catch(e){return{...DFLT}}};
 CFG=CFG();
 const saveCFG=()=>localStorage.setItem('hc_cfg',JSON.stringify(CFG));
@@ -470,14 +470,29 @@ function parseIcal(txt){
   const expandFrom=EXPAND_FROM(), expandTo=EXPAND_TO();
 
   for(const blk of blocks){
-    // get() handles property params e.g. DTSTART;TZID=Asia/Kolkata:20240101T090000
+    // get() extracts value after colon, ignoring property parameters
     const get=k=>{const m=blk.match(new RegExp(`^${k}[^:\\n]*:(.*)$`,'m'));return m?m[1].trim():''};
+    // getRaw() gets the full property line so we can check for Z suffix or TZID
+    const getRaw=k=>{const m=blk.match(new RegExp(`^(${k}[^\\n]*)$`,'m'));return m?m[1].trim():''};
 
-    const pd=s=>{
-      if(!s)return null;
-      // Strip timezone suffix — we treat all times as local
-      s=s.replace(/Z$/,'');
-      if(s.includes('T'))return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8),+s.slice(9,11),+s.slice(11,13),+s.slice(13,15));
+    // Parse a date/time string from iCal correctly:
+    // - If value ends with Z → it is UTC → use new Date(iso) which auto-converts to local
+    // - If property has TZID → value is already in that timezone → treat as local
+    //   (since device and calendar are both IST, treating as local is correct)
+    // - If all-day (no T) → return midnight local time
+    const pd=(s, raw='')=>{
+      if(!s) return null;
+      if(s.includes('T')){
+        if(s.endsWith('Z')){
+          // UTC time — let JS Date parse the ISO string so it converts to local automatically
+          const iso = `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}T${s.slice(9,11)}:${s.slice(11,13)}:${s.slice(13,15)}Z`;
+          return new Date(iso);
+        } else {
+          // Local time (TZID or floating) — parse as local components directly
+          return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8),+s.slice(9,11),+s.slice(11,13),+s.slice(13,15));
+        }
+      }
+      // All-day event — date only, no time component
       return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8));
     };
 
@@ -487,8 +502,10 @@ function parseIcal(txt){
     const title = (get('SUMMARY')||'').replace(/\\n/g,'\n').replace(/\\,/g,',').replace(/\\/g,'');
     const loc   = (get('LOCATION')||'').replace(/\\n/g,' ').replace(/\\/g,'');
     const desc  = (get('DESCRIPTION')||'').replace(/\\n/g,'\n').replace(/\\/g,'');
-    const start = pd(get('DTSTART'));
-    const end   = pd(get('DTEND'));
+    const dtStartRaw = getRaw('DTSTART');
+    const dtEndRaw   = getRaw('DTEND');
+    const start = pd(get('DTSTART'), dtStartRaw);
+    const end   = pd(get('DTEND'),   dtEndRaw);
     const rrule = get('RRULE');
     const exdateRaw = get('EXDATE'); // excluded dates for recurring events
 
@@ -522,7 +539,7 @@ function parseIcal(txt){
 
     const freq     = rr.FREQ||'';                          // DAILY WEEKLY MONTHLY YEARLY
     const interval = parseInt(rr.INTERVAL||'1');
-    const until    = rr.UNTIL ? pd(rr.UNTIL) : null;
+    const until    = rr.UNTIL ? pd(rr.UNTIL.trim()) : null;
     const count    = rr.COUNT ? parseInt(rr.COUNT) : null;
     const byDay    = rr.BYDAY ? rr.BYDAY.split(',').map(s=>s.trim()) : [];
     const byMonthDay = rr.BYMONTHDAY ? rr.BYMONTHDAY.split(',').map(Number) : [];
