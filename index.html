@@ -252,6 +252,12 @@ body.light .theme-btn::after{transform:translateX(16px)}
   </div>
 </div>
 
+<!-- DEBUG OVERLAY -->
+<div id="debug-overlay" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;overflow:auto;padding:16px">
+  <button onclick="document.getElementById('debug-overlay').style.display='none'" style="position:fixed;top:10px;right:10px;background:red;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:14px">Close</button>
+  <pre id="debug-log" style="font-size:11px;color:#0f0;white-space:pre-wrap;word-break:break-all;margin-top:40px;font-family:monospace;line-height:1.6"></pre>
+</div>
+
 <div id="setup-screen" class="open">
   <div class="setup-logo">HomeCal</div>
   <p class="setup-sub">Family schedule display — no login needed.<br>Uses your Google Calendar private iCal links.</p>
@@ -339,7 +345,7 @@ body.light .theme-btn::after{transform:translateX(16px)}
   <div class="s-section">
     <h3>CORS Proxy</h3>
     <input class="form-input" id="s-proxy" placeholder="https://corsproxy.io/?">
-    <div class="s-note">Required so the browser can fetch iCal files. Recommended: <b>https://corsproxy.io/?</b> (paste exactly, include the ? at the end). Alternative: <b>https://api.allorigins.win/raw?url=</b></div>
+    <div class="s-note">The app automatically tries multiple free proxies in sequence — you usually do not need to change this. Current recommended: <b>https://api.allorigins.win/raw?url=</b><br>Leave blank to use automatic failover only.</div>
   </div>
   <div class="s-section">
     <h3>Night Mode (auto-dim)</h3>
@@ -356,6 +362,7 @@ body.light .theme-btn::after{transform:translateX(16px)}
   <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
     <button class="btn-primary" onclick="saveSettings()">Save &amp; Launch</button>
     <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+    <button class="btn" onclick="closeSettings();showDebugOverlay()" style="margin-left:auto;border-color:var(--warn);color:var(--warn)">🔍 Debug</button>
   </div>
 </div>
 
@@ -529,7 +536,7 @@ body.light .theme-btn::after{transform:translateX(16px)}
 
 <script>
 // ── CONFIG ──
-const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://corsproxy.io/?',version:'3.2',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00',alertTone:'1',settingsPin:'1234',theme:'dark'};
+const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://homecal-proxy.cars-sushi5n.workers.dev/?url=',version:'3.8',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00',alertTone:'1',settingsPin:'1234',theme:'dark'};
 let CFG=()=>{try{return{...DFLT,...JSON.parse(localStorage.getItem('hc_cfg')||'{}')}}catch(e){return{...DFLT}}};
 CFG=CFG();
 const saveCFG=()=>localStorage.setItem('hc_cfg',JSON.stringify(CFG));
@@ -723,16 +730,54 @@ function parseIcal(txt){
 }
 
 // ── FETCH ──
+// Ordered list of CORS proxy builder functions
+const PROXY_LIST = [
+  url => `https://homecal-proxy.cars-sushi5n.workers.dev/?url=${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.org/?url=${encodeURIComponent(url)}`,
+  url => `https://thingproxy.freeboard.io/fetch/${url}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+
+async function fetchWithFailover(url){
+  const bustUrl = url + (url.includes('?') ? '&' : '?') + '_cb=' + Date.now();
+  const log = (msg) => {
+    const el = document.getElementById('debug-log');
+    if(el) el.textContent += msg + '\n';
+  };
+  const logEl = document.getElementById('debug-log');
+  if(logEl) logEl.textContent = '';
+
+  for(const proxyFn of PROXY_LIST){
+    try{
+      const proxyUrl = proxyFn(bustUrl);
+      log('Trying: ' + proxyUrl.slice(0,70) + '...');
+      const r = await fetch(proxyUrl, {cache:'no-store'});
+      log('Status: ' + r.status);
+      if(!r.ok){ log('SKIP — bad status'); continue; }
+      const txt = await r.text();
+      log('Length: ' + txt.length + ' | Start: ' + txt.replace(/^\uFEFF/,'').trimStart().slice(0,40));
+      const trimmed = txt.replace(/^\uFEFF/,'').trimStart();
+      if(trimmed.includes('VCALENDAR')){ log('SUCCESS'); return trimmed; }
+      log('SKIP — not iCal');
+    }catch(e){ log('ERROR: ' + e.message); continue; }
+  }
+  log('ALL PROXIES FAILED');
+  return null;
+}
+
+function showDebugOverlay(){
+  document.getElementById('debug-overlay').style.display='block';
+  document.getElementById('debug-log').textContent='Starting sync...\n';
+  syncAll();
+}
+
 async function fetchIcal(url){
   if(!url)return[];
   try{
-    const bustUrl = url + (url.includes('?') ? '&' : '?') + '_cb=' + Date.now();
-    const r=await fetch((CFG.proxy||'https://corsproxy.io/?')+encodeURIComponent(bustUrl),{
-      cache:'no-store',
-      headers:{'Cache-Control':'no-cache, no-store, must-revalidate','Pragma':'no-cache'}
-    });
-    if(!r.ok)return[];
-    return parseIcal(await r.text());
+    const txt = await fetchWithFailover(url);
+    if(!txt){ return []; }
+    return parseIcal(txt);
   }catch(e){console.warn('iCal fail',e);return[];}
 }
 
