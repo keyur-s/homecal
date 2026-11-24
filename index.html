@@ -18,7 +18,7 @@
   --accent:#7c6aff;--accent2:#ff6a9a;--success:#4ade80;--warn:#fbbf24;--danger:#f87171;
   --radius:14px;--radius-sm:8px;
   --font-display:'DM Serif Display',serif;--font-body:'DM Sans',sans-serif;
-  --sidebar-w:72px;--footer-h:30px;
+  --sidebar-w:72px;--footer-h:30px;--stars-h:44px;
 }
 /* Light mode override */
 body.light{
@@ -40,8 +40,8 @@ body.light{
 .pin-error{font-size:12px;color:var(--danger);min-height:16px;text-align:center}
 html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--text);
   font-family:var(--font-body);font-size:14px;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-#app{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:1fr var(--footer-h);height:100vh;width:100vw}
-#sidebar{grid-row:1/2;background:var(--surface);border-right:1px solid var(--border);
+#app{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:var(--stars-h) 1fr var(--footer-h);height:100vh;width:100vw}
+#sidebar{grid-row:1/3;background:var(--surface);border-right:1px solid var(--border);
   display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:4px;z-index:10}
 .logo{font-family:var(--font-display);font-size:12px;color:var(--accent);text-align:center;
   padding:4px 0 8px;border-bottom:1px solid var(--border);width:100%;margin-bottom:4px}
@@ -69,7 +69,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
   background:#fff;top:3px;left:3px;transition:transform .2s}
 body.light .theme-btn{background:var(--accent)}
 body.light .theme-btn::after{transform:translateX(16px)}
-#main{grid-column:2;grid-row:1;overflow:hidden;position:relative}
+#main{grid-column:2;grid-row:2;overflow:hidden;position:relative}
 .view{display:none;width:100%;height:100%;position:absolute;top:0;left:0}
 .view.active{display:flex}
 .split{display:flex;width:100%;height:100%}
@@ -208,7 +208,7 @@ body.light .theme-btn::after{transform:translateX(16px)}
 .setup-sub{font-size:13px;color:var(--text2);line-height:1.7;max-width:340px}
 .setup-box{text-align:left;max-width:360px;background:var(--surface);border-radius:var(--radius);
   padding:16px;border:1px solid var(--border);font-size:12px;color:var(--text2);line-height:2.1}
-#footer{grid-column:1/3;grid-row:2;background:var(--surface);border-top:1px solid var(--border);
+#footer{grid-column:1/3;grid-row:3;background:var(--surface);border-top:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:10px;color:var(--text3)}
 .sync-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--success);margin-right:5px;vertical-align:middle}
 .sync-dot.busy{background:var(--warn);animation:pulse .8s ease-in-out infinite}
@@ -218,6 +218,47 @@ body.light .theme-btn::after{transform:translateX(16px)}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+/* ── STARS ── */
+.sync-dot.fail:not(.busy){background:var(--danger)}
+#sync-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:78vw}
+#starbar{grid-column:2;grid-row:1;display:flex;align-items:stretch;background:var(--surface);
+  border-bottom:1px solid var(--border);cursor:pointer;-webkit-user-select:none;user-select:none;z-index:9}
+.sb-kid{flex:1;display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;padding:0 10px}
+.sb-kid+.sb-kid{border-left:1px solid var(--border)}
+.sb-name{font-family:var(--font-display);font-size:16px;color:var(--text2);white-space:nowrap}
+.sb-num{font-family:var(--font-display);font-size:25px;line-height:1;color:var(--text)}
+.sb-today{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.sb-today.pos{color:#F5B301;background:rgba(245,179,1,.16)}
+.sb-today.neg{color:var(--text2);background:rgba(128,128,150,.22)}
+body.light .sb-today.pos{color:#8a6100;background:rgba(245,179,1,.28)}
+.star{stroke-width:1.3;stroke-linejoin:round;flex-shrink:0}
+.star.gold{fill:#F5B301;stroke:#c98a00}
+.star.black{fill:#0a0a0a;stroke:rgba(255,255,255,.6)}
+body.light .star.black{stroke:#000}
+.star.zero{fill:none;stroke:var(--text3)}
+#stars-panel{display:none;position:fixed;inset:0;background:var(--bg);z-index:160;overflow-y:auto;padding:16px 20px 28px}
+#stars-panel.open{display:block}
+.st-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.st-title{font-family:var(--font-display);font-size:22px;color:var(--text);flex:1}
+.st-kids{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:700px){.st-kids{grid-template-columns:1fr}}
+.st-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.st-head{display:flex;align-items:center;gap:10px}
+.st-kidname{font-family:var(--font-display);font-size:20px;color:var(--text);flex:1}
+.st-net{font-family:var(--font-display);font-size:36px;line-height:1;color:var(--text)}
+.st-sub{font-size:11px;color:var(--text2);margin:6px 0 12px}
+.st-day{font-size:13px;color:var(--text2);margin-bottom:8px}
+.st-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.st-b{height:58px;border-radius:12px;font-family:var(--font-body);font-size:19px;font-weight:700;cursor:pointer;border:1.5px solid transparent}
+.st-b.minus{background:#111;color:#fff;border-color:rgba(255,255,255,.35)}
+.st-b.plus{background:#F5B301;color:#1a1a1a}
+.st-b:active{transform:scale(.96)}
+.st-undo{margin-top:10px}
+.st-undo:disabled{opacity:.35}
+.st-log{margin-top:12px;font-size:12px;color:var(--text2)}
+.st-log-row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--border)}
+.st-red-row{display:flex;gap:8px;flex-wrap:wrap}
+.st-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 /* ── NIGHT MODE ── */
 #night-overlay{display:none;position:fixed;inset:0;background:#000;z-index:500;cursor:pointer;
   flex-direction:column;align-items:center;justify-content:center;gap:12px}
@@ -230,7 +271,7 @@ body.light .theme-btn::after{transform:translateX(16px)}
 
 <!-- PIN LOCK OVERLAY -->
 <div id="pin-overlay">
-  <div class="pin-title">Enter PIN to access Settings</div>
+  <div class="pin-title" id="pin-title">Enter PIN to access Settings</div>
   <div class="pin-dots">
     <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
     <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
@@ -366,6 +407,21 @@ body.light .theme-btn::after{transform:translateX(16px)}
   </div>
 </div>
 
+<div id="stars-panel">
+  <div class="st-top">
+    <button class="btn" onclick="closeStars()">← Done</button>
+    <div class="st-title">Stars</div>
+    <div class="date-nav">
+      <button class="dnav" onclick="starDay(-1)">‹</button>
+      <span class="date-lbl" id="st-date" style="min-width:110px"></span>
+      <button class="dnav" onclick="starDay(1)">›</button>
+    </div>
+    <button class="btn" onclick="starToday()">Today</button>
+  </div>
+  <div class="st-kids" id="st-kids"></div>
+  <div id="st-redeem" style="margin-top:12px"></div>
+</div>
+
 <div id="alert-overlay">
   <div id="alert-box">
     <div class="al-lead" id="al-lead">In 15 minutes</div>
@@ -436,6 +492,8 @@ body.light .theme-btn::after{transform:translateX(16px)}
     <div id="ft-buttons"></div>
     <div class="sb-divider"></div>
   </nav>
+
+  <div id="starbar" onclick="showPinOverlay('stars')" title="Tap to change stars (PIN)"></div>
 
   <main id="main">
     <div class="view active" id="view-A">
@@ -536,9 +594,10 @@ body.light .theme-btn::after{transform:translateX(16px)}
 
 <script>
 // ── CONFIG ──
-const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://homecal-proxy.cars-sushi5n.workers.dev/?url=',version:'3.8',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00',alertTone:'1',settingsPin:'1234',theme:'dark'};
+const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://homecal-proxy.cars-sushi5n.workers.dev/?url=',version:'3.9',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00',alertTone:'1',settingsPin:'1234',theme:'dark'};
 let CFG=()=>{try{return{...DFLT,...JSON.parse(localStorage.getItem('hc_cfg')||'{}')}}catch(e){return{...DFLT}}};
 CFG=CFG();
+CFG.version=DFLT.version; // never let a saved older version number override the real one
 const saveCFG=()=>localStorage.setItem('hc_cfg',JSON.stringify(CFG));
 
 // ── STATE ──
@@ -566,109 +625,129 @@ const BYDAY_MAP = {SU:0,MO:1,TU:2,WE:3,TH:4,FR:5,SA:6};
 
 function parseIcal(txt){
   const evs=[];
-  // Unfold RFC5545 line folding
-  txt=txt.replace(/\r\n[ \t]/g,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  // Normalise line endings, then unfold RFC5545 folded lines
+  txt=txt.replace(/\r\n?/g,'\n').replace(/\n[ \t]/g,'');
   const blocks=txt.split('BEGIN:VEVENT'); blocks.shift();
   const expandFrom=EXPAND_FROM(), expandTo=EXPAND_TO();
 
-  for(const blk of blocks){
-    // get() extracts value after colon, ignoring property parameters
-    const get=k=>{const m=blk.match(new RegExp(`^${k}[^:\\n]*:(.*)$`,'m'));return m?m[1].trim():''};
-    // getRaw() gets the full property line so we can check for Z suffix or TZID
-    const getRaw=k=>{const m=blk.match(new RegExp(`^(${k}[^\\n]*)$`,'m'));return m?m[1].trim():''};
+  // getAll() returns the value of EVERY line for a property (e.g. Google emits one EXDATE line per date)
+  const getAll=(blk,k)=>{
+    const out=[]; const re=new RegExp('^'+k+'(?:;[^:\\n]*)?:(.*)$','gm'); let m;
+    while((m=re.exec(blk))) out.push(m[1].trim());
+    return out;
+  };
+  const get=(blk,k)=>getAll(blk,k)[0]||'';
 
-    // Parse a date/time string from iCal correctly:
-    // - If value ends with Z → it is UTC → use new Date(iso) which auto-converts to local
-    // - If property has TZID → value is already in that timezone → treat as local
-    //   (since device and calendar are both IST, treating as local is correct)
-    // - If all-day (no T) → return midnight local time
-    const pd=(s, raw='')=>{
-      if(!s) return null;
-      if(s.includes('T')){
-        if(s.endsWith('Z')){
-          // UTC time — let JS Date parse the ISO string so it converts to local automatically
-          const iso = `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}T${s.slice(9,11)}:${s.slice(11,13)}:${s.slice(13,15)}Z`;
-          return new Date(iso);
-        } else {
-          // Local time (TZID or floating) — parse as local components directly
-          return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8),+s.slice(9,11),+s.slice(11,13),+s.slice(13,15));
-        }
+  // Date parsing:
+  // - ends with Z → UTC → JS converts to local automatically
+  // - TZID / floating → treat as local (device and calendar share a timezone)
+  // - date only (all-day) → local midnight
+  const pd=(s)=>{
+    if(!s) return null;
+    s=s.trim();
+    if(s.includes('T')){
+      if(s.endsWith('Z')){
+        const iso=`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}T${s.slice(9,11)}:${s.slice(11,13)}:${s.slice(13,15)}Z`;
+        return new Date(iso);
       }
-      // All-day event — date only, no time component
-      return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8));
-    };
-
-    if(get('STATUS')==='CANCELLED') continue;
-
-    const uid   = get('UID');
-    const title = (get('SUMMARY')||'').replace(/\\n/g,'\n').replace(/\\,/g,',').replace(/\\/g,'');
-    const loc   = (get('LOCATION')||'').replace(/\\n/g,' ').replace(/\\/g,'');
-    const desc  = (get('DESCRIPTION')||'').replace(/\\n/g,'\n').replace(/\\/g,'');
-    const dtStartRaw = getRaw('DTSTART');
-    const dtEndRaw   = getRaw('DTEND');
-    const start = pd(get('DTSTART'), dtStartRaw);
-    const end   = pd(get('DTEND'),   dtEndRaw);
-    const rrule = get('RRULE');
-    const exdateRaw = get('EXDATE'); // excluded dates for recurring events
-
-    if(!start||!title) continue;
-
-    const duration = end ? end.getTime()-start.getTime() : 3600000;
-
-    // Parse EXDATE — dates excluded from recurrence
-    const exDates = new Set();
-    if(exdateRaw){
-      exdateRaw.split(',').forEach(s=>{
-        const d=pd(s.trim());
-        if(d) exDates.add(d.toDateString());
-      });
+      return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8),+s.slice(9,11),+s.slice(11,13),+s.slice(13,15));
     }
+    return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8));
+  };
 
-    // ── NON-RECURRING EVENT ──
-    if(!rrule){
-      if(start>=expandFrom && start<=expandTo){
-        evs.push({uid,title,start,end:end||new Date(start.getTime()+duration),location:loc,description:desc});
+  // ── PASS 1: read every VEVENT into a plain object ──
+  const raws=[];
+  for(let blk of blocks){
+    blk=blk.split('END:VEVENT')[0].replace(/BEGIN:VALARM[\s\S]*?END:VALARM/g,'');
+    const exDates=new Set();
+    getAll(blk,'EXDATE').forEach(line=>line.split(',').forEach(s=>{
+      const d=pd(s); if(d&&!isNaN(d)) exDates.add(d.toDateString());
+    }));
+    const recIdStr=get(blk,'RECURRENCE-ID');
+    raws.push({
+      uid:get(blk,'UID'),
+      cancelled:get(blk,'STATUS').toUpperCase()==='CANCELLED',
+      title:(get(blk,'SUMMARY')||'').replace(/\\n/g,'\n').replace(/\\,/g,',').replace(/\\/g,''),
+      loc:(get(blk,'LOCATION')||'').replace(/\\n/g,' ').replace(/\\/g,''),
+      desc:(get(blk,'DESCRIPTION')||'').replace(/\\n/g,'\n').replace(/\\/g,''),
+      start:pd(get(blk,'DTSTART')),
+      end:pd(get(blk,'DTEND')),
+      rrule:get(blk,'RRULE'),
+      exDates,
+      recId:recIdStr?pd(recIdStr):null
+    });
+  }
+
+  // Edited or cancelled single occurrences of a repeating event (RECURRENCE-ID):
+  // remember which original dates must be skipped when the series is expanded.
+  const overridden={};
+  for(const r of raws){
+    if(r.recId&&!isNaN(r.recId)) (overridden[r.uid]=overridden[r.uid]||new Set()).add(r.recId.toDateString());
+  }
+
+  // ── PASS 2: build the event list ──
+  for(const r of raws){
+    if(r.cancelled) continue;
+    if(!r.start||isNaN(r.start)||!r.title) continue;
+    const {uid,title,loc,desc,start,end,rrule}=r;
+    const duration=end&&!isNaN(end)?end.getTime()-start.getTime():3600000;
+
+    // An edited single occurrence: show it as its own event (the original slot is skipped below)
+    if(r.recId&&!isNaN(r.recId)){
+      if(start>=expandFrom&&start<=expandTo){
+        evs.push({uid,title,start,end:new Date(start.getTime()+duration),location:loc,description:desc,
+          recurring:true,instanceKey:`${uid}__${r.recId.toISOString()}`});
       }
       continue;
     }
 
-    // ── PARSE RRULE ──
+    // ── NON-RECURRING EVENT ──
+    if(!rrule){
+      if(start>=expandFrom&&start<=expandTo){
+        evs.push({uid,title,start,end:new Date(start.getTime()+duration),location:loc,description:desc});
+      }
+      continue;
+    }
+
+    // ── RECURRING EVENT ──
+    const skip=new Set(r.exDates);
+    if(overridden[uid]) overridden[uid].forEach(x=>skip.add(x));
+
     const rr={};
     rrule.split(';').forEach(part=>{
       const [k,v]=part.split('=');
       rr[k.trim()]=v?v.trim():'';
     });
 
-    const freq     = rr.FREQ||'';                          // DAILY WEEKLY MONTHLY YEARLY
-    const interval = parseInt(rr.INTERVAL||'1');
-    const until    = rr.UNTIL ? pd(rr.UNTIL.trim()) : null;
-    const count    = rr.COUNT ? parseInt(rr.COUNT) : null;
-    const byDay    = rr.BYDAY ? rr.BYDAY.split(',').map(s=>s.trim()) : [];
-    const byMonthDay = rr.BYMONTHDAY ? rr.BYMONTHDAY.split(',').map(Number) : [];
+    const freq=rr.FREQ||'';
+    const interval=parseInt(rr.INTERVAL||'1');
+    const until=rr.UNTIL?pd(rr.UNTIL.trim()):null;
+    const count=rr.COUNT?parseInt(rr.COUNT):null;
+    const byDay=rr.BYDAY?rr.BYDAY.split(',').map(s=>s.trim()):[];
+    const byMonthDay=rr.BYMONTHDAY?rr.BYMONTHDAY.split(',').map(Number):[];
 
-    // Hard cap — never generate more than 500 instances per event
-    const MAX_INSTANCES = 500;
-    let instances=0;
+    const MAX_INSTANCES=500;   // max shown instances per event
+    const MAX_ITER=20000;      // safety stop for the loop itself
+    let inst=0, n=0, iter=0;
 
-    // Clone start date as our cursor — preserve local time components from correctly-parsed base
     const baseH=start.getHours(), baseM=start.getMinutes(), baseS=start.getSeconds();
-    let cursor = new Date(start);
+    let cursor=new Date(start);
 
-    while(cursor<=expandTo && instances<MAX_INSTANCES){
-      // Stop if UNTIL exceeded
+    while(cursor<=expandTo && iter<MAX_ITER && inst<MAX_INSTANCES){
+      iter++;
       if(until && cursor>until) break;
-      // Stop if COUNT exhausted
-      if(count && instances>=count) break;
+      if(count && n>=count) break;
+      n++; // every occurrence counts toward COUNT, even ones before the window or excluded
 
-      const inWindow = cursor>=expandFrom && cursor<=expandTo;
-      const notExcluded = !exDates.has(cursor.toDateString());
+      const inWindow=cursor>=expandFrom && cursor<=expandTo;
+      const notExcluded=!skip.has(cursor.toDateString());
 
       if(inWindow && notExcluded){
-        const evStart = new Date(cursor);
-        const evEnd   = new Date(cursor.getTime()+duration);
+        const evStart=new Date(cursor);
+        const evEnd=new Date(cursor.getTime()+duration);
         evs.push({uid,title,start:evStart,end:evEnd,location:loc,description:desc,
-          recurring:true, instanceKey:`${uid}__${evStart.toISOString()}`});
-        instances++;
+          recurring:true,instanceKey:`${uid}__${evStart.toISOString()}`});
+        inst++;
       }
 
       // ── ADVANCE CURSOR ──
@@ -680,7 +759,6 @@ function parseIcal(txt){
           cursor.setDate(cursor.getDate()+7*interval);
           cursor.setHours(baseH,baseM,baseS,0);
         } else {
-          // Find next occurrence on any of the specified weekdays
           cursor.setDate(cursor.getDate()+1);
           let safetyLimit=0;
           while(safetyLimit<700){
@@ -688,7 +766,6 @@ function parseIcal(txt){
             const dow=cursor.getDay();
             const dayNames=['SU','MO','TU','WE','TH','FR','SA'];
             if(byDay.some(bd=>bd.slice(-2)===dayNames[dow])){
-              // Check we're on the right week interval from start
               const weekDiff=Math.round((cursor-start)/(7*86400000));
               if(weekDiff%interval===0) break;
             }
@@ -721,8 +798,7 @@ function parseIcal(txt){
         cursor.setFullYear(cursor.getFullYear()+interval);
         cursor.setHours(baseH,baseM,baseS,0);
       } else {
-        // Unknown frequency — stop to avoid infinite loop
-        break;
+        break; // unknown frequency — stop to avoid an infinite loop
       }
     }
   }
@@ -739,30 +815,35 @@ const PROXY_LIST = [
   url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ];
 
+const dbg=(msg)=>{
+  const el=document.getElementById('debug-log');
+  if(!el) return;
+  el.textContent+=msg+'\n';
+  if(el.textContent.length>8000) el.textContent=el.textContent.slice(-6000);
+};
+
+// Returns the iCal text, or null if every proxy failed.
+// Each attempt gives up after 15 s so one hung request can never freeze syncing.
 async function fetchWithFailover(url){
   const bustUrl = url + (url.includes('?') ? '&' : '?') + '_cb=' + Date.now();
-  const log = (msg) => {
-    const el = document.getElementById('debug-log');
-    if(el) el.textContent += msg + '\n';
-  };
-  const logEl = document.getElementById('debug-log');
-  if(logEl) logEl.textContent = '';
-
   for(const proxyFn of PROXY_LIST){
+    const ctl = (typeof AbortController!=='undefined') ? new AbortController() : null;
+    const tm = setTimeout(()=>{ if(ctl) ctl.abort(); }, 15000);
     try{
       const proxyUrl = proxyFn(bustUrl);
-      log('Trying: ' + proxyUrl.slice(0,70) + '...');
-      const r = await fetch(proxyUrl, {cache:'no-store'});
-      log('Status: ' + r.status);
-      if(!r.ok){ log('SKIP — bad status'); continue; }
+      dbg('Trying: ' + proxyUrl.slice(0,70) + '...');
+      const r = await fetch(proxyUrl, {cache:'no-store', signal: ctl?ctl.signal:undefined});
+      dbg('Status: ' + r.status);
+      if(!r.ok){ dbg('SKIP — bad status'); continue; }
       const txt = await r.text();
-      log('Length: ' + txt.length + ' | Start: ' + txt.replace(/^\uFEFF/,'').trimStart().slice(0,40));
-      const trimmed = txt.replace(/^\uFEFF/,'').trimStart();
-      if(trimmed.includes('VCALENDAR')){ log('SUCCESS'); return trimmed; }
-      log('SKIP — not iCal');
-    }catch(e){ log('ERROR: ' + e.message); continue; }
+      const trimmed = txt.replace(/^﻿/,'').trimStart();
+      dbg('Length: ' + txt.length + ' | Start: ' + trimmed.slice(0,40));
+      if(trimmed.includes('BEGIN:VCALENDAR') && trimmed.includes('END:VCALENDAR')){ dbg('SUCCESS'); return trimmed; }
+      dbg('SKIP — not a complete iCal file');
+    }catch(e){ dbg('ERROR: ' + e.message); }
+    finally{ clearTimeout(tm); }
   }
-  log('ALL PROXIES FAILED');
+  dbg('ALL PROXIES FAILED');
   return null;
 }
 
@@ -772,37 +853,63 @@ function showDebugOverlay(){
   syncAll();
 }
 
+// Returns an array of events, or null when the calendar could not be fetched/parsed
+// (null lets syncAll keep showing the last good data instead of wiping the screen).
 async function fetchIcal(url){
-  if(!url)return[];
+  if(!url) return [];
   try{
     const txt = await fetchWithFailover(url);
-    if(!txt){ return []; }
-    return parseIcal(txt);
-  }catch(e){console.warn('iCal fail',e);return[];}
+    if(!txt) return null;
+    const evs = parseIcal(txt);
+    dbg('Parsed ' + evs.length + ' events');
+    return evs;
+  }catch(e){ dbg('PARSE ERROR: ' + e.message); console.warn('iCal fail',e); return null; }
 }
 
 async function syncAll(){
-  if(ST.syncing)return;
-  ST.syncing=true;
+  // A sync stuck for over 3 minutes is treated as dead so it can never block future syncs
+  if(ST.syncing && Date.now()-(ST.syncStart||0)<180000) return;
+  ST.syncing=true; ST.syncStart=Date.now();
   document.getElementById('sync-dot').classList.add('busy');
-  let all=[];
-  for(let i=0;i<CFG.profiles.length;i++){
-    const p=CFG.profiles[i];if(!p.icalUrl)continue;
-    const items=await fetchIcal(p.icalUrl);
-    for(const ev of items){
-      const id=ev.recurring ? `${i}__${ev.instanceKey}` : `${i}__${ev.uid}`;
-      all.push({...ev,profileIdx:i,id,struckOut:ST.strikes.includes(id)});
+  try{
+    const prev=ST.events||[];
+    const all=[], fails=[], okIdx=new Set();
+    for(let i=0;i<CFG.profiles.length;i++){
+      const p=CFG.profiles[i]; if(!p.icalUrl) continue;
+      dbg('— '+(p.name||('Profile '+(i+1)))+' —');
+      const items=await fetchIcal(p.icalUrl);
+      if(items===null){
+        // Fetch failed: keep this profile's previous events rather than blanking it
+        fails.push(p.name||('Profile '+(i+1)));
+        prev.filter(e=>e.profileIdx===i).forEach(e=>all.push(e));
+        continue;
+      }
+      okIdx.add(i);
+      for(const ev of items){
+        const id=ev.recurring ? `${i}__${ev.instanceKey}` : `${i}__${ev.uid}`;
+        all.push({...ev,profileIdx:i,id,struckOut:ST.strikes.includes(id)});
+      }
     }
+    ST.events=all;
+    // Forget strike-outs for events that no longer exist (profiles that synced fine only)
+    const live=new Set(all.map(e=>e.id));
+    const keep=ST.strikes.filter(id=>live.has(id)||!okIdx.has(parseInt(id.split('__')[0],10)));
+    if(keep.length!==ST.strikes.length){ ST.strikes=keep; saveStrikes(); }
+    if(CFG.notesUrl){
+      const ni=await fetchIcal(CFG.notesUrl);
+      if(ni!==null) ST.notes=ni.map(n=>({...n,id:`n__${n.uid}`,done:ST.doneNotes.includes(`n__${n.uid}`)}));
+    }
+    ST.syncFail=fails;
+    if(okIdx.size||!fails.length) ST.lastSync=new Date();
+  }catch(e){
+    dbg('SYNC ERROR: '+e.message); console.warn('sync error',e);
+  }finally{
+    ST.syncing=false;
+    document.getElementById('sync-dot').classList.remove('busy');
+    updateFooter(); renderCurrent(); checkAlerts();
   }
-  ST.events=all;
-  if(CFG.notesUrl){
-    const ni=await fetchIcal(CFG.notesUrl);
-    ST.notes=ni.map(n=>({...n,id:`n__${n.uid}`,done:ST.doneNotes.includes(`n__${n.uid}`)}));
-  }
-  ST.lastSync=new Date();ST.syncing=false;
-  document.getElementById('sync-dot').classList.remove('busy');
-  updateFooter();renderCurrent();checkAlerts();
 }
+
 const syncNow=()=>syncAll();
 
 // ── ALERTS ──
@@ -946,7 +1053,10 @@ function initLogoTap(){
   });
 }
 let _pinEntry='';
-function showPinOverlay(){
+let _pinMode='settings';
+function showPinOverlay(mode){
+  _pinMode=(mode==='stars')?'stars':'settings';
+  document.getElementById('pin-title').textContent=_pinMode==='stars'?'Enter PIN to change stars':'Enter PIN to access Settings';
   _pinEntry='';
   updatePinDots();
   document.getElementById('pin-error').textContent='';
@@ -964,7 +1074,7 @@ function pinKey(k){
   if(_pinEntry.length===4){
     if(_pinEntry===(CFG.settingsPin||'1234')){
       closePinOverlay();
-      openSettings();
+      if(_pinMode==='stars') openStars(); else openSettings();
     } else {
       document.getElementById('pin-error').textContent='Incorrect PIN';
       setTimeout(()=>{ _pinEntry=''; updatePinDots(); document.getElementById('pin-error').textContent=''; },800);
@@ -1346,9 +1456,9 @@ function saveSettings(){
     CFG.profiles[i].color=document.getElementById(`ps-c${i}`)?.value||CFG.profiles[i].color;
   });
   saveCFG();document.getElementById('settings-panel').classList.remove('open');document.getElementById('setup-screen').classList.remove('open');
-  renderFacetimeButtons();syncAll();
+  renderFacetimeButtons();syncAll();startTimers();
 }
-function tryLaunch(){document.getElementById('setup-screen').classList.remove('open');if(!CFG.profiles.some(p=>p.icalUrl)){openSettings();return;}syncAll();}
+function tryLaunch(){document.getElementById('setup-screen').classList.remove('open');if(!CFG.profiles.some(p=>p.icalUrl)){openSettings();return;}syncAll();startTimers();}
 
 // ── FACETIME BUTTONS ──
 const isStandalone = () => window.navigator.standalone === true;
@@ -1418,6 +1528,7 @@ function checkNightMode() {
     document.getElementById('night-clock').textContent =
       now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true});
     overlay.classList.add('on');
+    closeStars(); // lock the stars panel when the screen dims
   } else {
     overlay.classList.remove('on');
   }
@@ -1429,9 +1540,164 @@ function wakeScreen() {
   document.getElementById('night-overlay').classList.remove('on');
 }
 
+// ── STARS ──
+// Two fixed kids. Net balance = all +/- adjustments minus anything redeemed.
+// Positive balance shows a gold star, negative a black star.
+const KIDS=[{key:'priyen',name:'Priyen'},{key:'utsavi',name:'Utsavi'}];
+const SP={date:new Date(),rdKid:'priyen'};
+function loadStars(){
+  let s=null;
+  try{ s=JSON.parse(localStorage.getItem('hc_stars')||'null'); }catch(e){}
+  if(!s||typeof s!=='object') s={};
+  s.kids=s.kids||{};
+  KIDS.forEach(k=>{ if(!Array.isArray(s.kids[k.key])) s.kids[k.key]=[]; });
+  if(!Array.isArray(s.rewards)) s.rewards=[];
+  return s;
+}
+let STARS=loadStars();
+function saveStars(){ try{ localStorage.setItem('hc_stars',JSON.stringify(STARS)); }catch(e){} }
+
+const byId=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad2=n=>String(n).padStart(2,'0');
+const dkey=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+const parseDk=s=>{const [a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c);};
+const signed=n=>n>0?'+'+n:n<0?'−'+(-n):'0';
+const plain=n=>n<0?'−'+(-n):String(n);
+const kidName=key=>(KIDS.find(k=>k.key===key)||{}).name||key;
+
+const kidNet=key=>STARS.kids[key].reduce((s,e)=>s+e.v,0);
+const kidDay=(key,dk)=>STARS.kids[key].filter(e=>e.kind==='adj'&&e.date===dk).reduce((s,e)=>s+e.v,0);
+
+function starSvg(net,px){
+  const cls=net<0?'black':net===0?'zero':'gold';
+  return `<svg class="star ${cls}" width="${px}" height="${px}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg>`;
+}
+
+// Slim always-on bar across the top of every view
+function renderStarBar(){
+  const el=byId('starbar'); if(!el) return;
+  const today=dkey(new Date());
+  el.innerHTML=KIDS.map(k=>{
+    const n=kidNet(k.key), t=kidDay(k.key,today);
+    return `<div class="sb-kid"><span class="sb-name">${k.name}</span>${starSvg(n,24)}<span class="sb-num">${plain(n)}</span>${t?`<span class="sb-today ${t<0?'neg':'pos'}">${signed(t)} today</span>`:''}</div>`;
+  }).join('');
+}
+
+// ── Stars panel (PIN protected) ──
+let _stIdle=null;
+function stBump(){ clearTimeout(_stIdle); _stIdle=setTimeout(closeStars,180000); } // auto-lock after 3 min idle
+function openStars(){
+  SP.date=new Date();
+  byId('stars-panel').classList.add('open');
+  renderStarsPanel(); renderRedeem('');
+  stBump();
+}
+function closeStars(){
+  clearTimeout(_stIdle);
+  const p=byId('stars-panel'); if(p) p.classList.remove('open');
+  renderStarBar();
+}
+function starDay(d){ SP.date=new Date(SP.date); SP.date.setDate(SP.date.getDate()+d); renderStarsPanel(); }
+function starToday(){ SP.date=new Date(); renderStarsPanel(); }
+
+function kidCard(k){
+  const e=STARS.kids[k.key], net=kidNet(k.key), dk=dkey(SP.date), day=kidDay(k.key,dk);
+  const earned=e.filter(x=>x.kind==='adj'&&x.v>0).reduce((s,x)=>s+x.v,0);
+  const black=-e.filter(x=>x.kind==='adj'&&x.v<0).reduce((s,x)=>s+x.v,0);
+  const spent=-e.filter(x=>x.kind==='redeem').reduce((s,x)=>s+x.v,0);
+  const by={};
+  e.forEach(x=>{
+    const b=by[x.date]=by[x.date]||{adj:0,red:[]};
+    if(x.kind==='adj') b.adj+=x.v; else b.red.push(x);
+  });
+  const rows=Object.keys(by).sort().reverse().slice(0,7).map(d=>{
+    const b=by[d];
+    const parts=[];
+    if(b.adj!==0||!b.red.length) parts.push(`<b>${signed(b.adj)}</b>`);
+    b.red.forEach(r=>parts.push(`Redeemed ${esc(r.note||'reward')} −${-r.v}`));
+    return `<div class="st-log-row"><span>${fmtDate(parseDk(d))}</span><span>${parts.join(' &middot; ')}</span></div>`;
+  }).join('');
+  const K=k.key;
+  return `<div class="st-card">
+    <div class="st-head">${starSvg(net,34)}<div class="st-kidname">${k.name}</div><div class="st-net">${plain(net)}</div></div>
+    <div class="st-sub">Earned ${earned} &middot; Black ${black} &middot; Redeemed ${spent}</div>
+    <div class="st-day">${sameDay(SP.date,new Date())?'Today':fmtDate(SP.date)}: <b>${signed(day)}</b></div>
+    <div class="st-btns">
+      <button class="st-b minus" onclick="starAdj('${K}',-10)">−10</button>
+      <button class="st-b minus" onclick="starAdj('${K}',-1)">−1</button>
+      <button class="st-b plus" onclick="starAdj('${K}',1)">+1</button>
+      <button class="st-b plus" onclick="starAdj('${K}',10)">+10</button>
+    </div>
+    <button class="btn st-undo" onclick="starUndo('${K}')" ${e.length?'':'disabled'}>Undo last change</button>
+    <div class="st-log">${rows||'<div style="padding:6px 0">No stars logged yet.</div>'}</div>
+  </div>`;
+}
+function renderStarsPanel(){
+  byId('st-date').textContent=fmtDate(SP.date);
+  byId('st-kids').innerHTML=KIDS.map(kidCard).join('');
+  renderStarBar();
+}
+function starAdj(key,v){
+  STARS.kids[key].push({ts:Date.now(),date:dkey(SP.date),v,kind:'adj'});
+  saveStars(); renderStarsPanel(); stBump();
+}
+function starUndo(key){
+  const arr=STARS.kids[key]; if(!arr.length) return;
+  let li=0; arr.forEach((x,i)=>{ if(x.ts>=arr[li].ts) li=i; });
+  arr.splice(li,1);
+  saveStars(); renderStarsPanel(); renderRedeem('');
+}
+
+function renderRedeem(msg){
+  const rw=STARS.rewards.map((r,i)=>`<button class="btn" onclick="pickReward(${i})">${esc(r.name)} &middot; ${r.cost}</button>`).join('');
+  byId('st-redeem').innerHTML=`<div class="st-card">
+    <div class="st-kidname" style="margin-bottom:10px">Redeem stars</div>
+    <div class="st-red-row">
+      <select id="rd-kid" class="form-input" style="flex:0 0 120px" onchange="SP.rdKid=this.value">${KIDS.map(k=>`<option value="${k.key}"${SP.rdKid===k.key?' selected':''}>${k.name}</option>`).join('')}</select>
+      <input id="rd-name" class="form-input" placeholder="What for? (e.g. Ice cream)" style="flex:1;min-width:160px">
+      <input id="rd-cost" class="form-input" type="number" inputmode="numeric" min="1" placeholder="Stars" style="flex:0 0 90px">
+      <button class="btn-primary" onclick="doRedeem()">Redeem</button>
+    </div>
+    ${rw?`<div class="st-chips">${rw}</div>`:''}
+    <div class="s-note" id="rd-msg">${esc(msg||'Redeeming spends stars from the balance. Use Undo last change to reverse a mistake.')}</div>
+  </div>`;
+}
+function pickReward(i){
+  const r=STARS.rewards[i]; if(!r) return;
+  byId('rd-name').value=r.name; byId('rd-cost').value=r.cost; stBump();
+}
+function doRedeem(){
+  const key=byId('rd-kid').value, name=byId('rd-name').value.trim(), cost=parseInt(byId('rd-cost').value,10);
+  SP.rdKid=key;
+  const msg=byId('rd-msg');
+  if(!name){ msg.textContent='Enter what the stars are for.'; return; }
+  if(!(cost>0)){ msg.textContent='Enter how many stars it costs.'; return; }
+  const net=kidNet(key);
+  if(cost>net){ msg.textContent=`${kidName(key)} has ${plain(net)} ★ and needs ${cost}. ${Math.max(cost-net,0)} more to go.`; return; }
+  STARS.kids[key].push({ts:Date.now(),date:dkey(new Date()),v:-cost,kind:'redeem',note:name});
+  STARS.rewards=[{name,cost},...STARS.rewards.filter(r=>r.name.toLowerCase()!==name.toLowerCase())].slice(0,6);
+  saveStars(); renderStarsPanel();
+  renderRedeem(`${kidName(key)} redeemed ${cost} ★ for ${name}. ${plain(kidNet(key))} left.`);
+  stBump();
+}
+
+// ── TIMERS ──
+let _syncTimer=null,_alertTimer=null;
+function startTimers(){
+  clearInterval(_syncTimer); clearInterval(_alertTimer);
+  _syncTimer=setInterval(syncAll,Math.max(1,CFG.syncMins||5)*60000);
+  _alertTimer=setInterval(checkAlerts,30000);
+}
+
 // ── FOOTER ──
 function updateFooter(){
-  document.getElementById('sync-text').textContent=ST.lastSync?`Synced ${ST.lastSync.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`:'Not synced yet';
+  const t=ST.lastSync?ST.lastSync.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):null;
+  const bad=ST.syncFail&&ST.syncFail.length;
+  document.getElementById('sync-text').textContent=bad
+    ?`Can't reach calendar for ${ST.syncFail.join(', ')} — showing earlier data${t?` (last sync ${t})`:''}`
+    :(t?`Synced ${t}`:'Not synced yet');
+  document.getElementById('sync-dot').classList.toggle('fail',!!bad);
   document.getElementById('footer-ver').textContent=`HomeCal v${CFG.version}`;
 }
 
@@ -1446,12 +1712,19 @@ function init(){
   document.addEventListener('touchstart', unlockAudio, {once:true});
   document.addEventListener('click', unlockAudio, {once:true});
   checkNightMode();
-  setInterval(()=>{ checkNightMode(); updateNowLine(); }, 60000);
+  renderStarBar();
+  setInterval(()=>{ checkNightMode(); updateNowLine(); renderStarBar(); }, 60000);
+  // Safari pauses timers while the iPad screen is off — sync as soon as it wakes
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState!=='visible') return;
+    checkNightMode();
+    if(CFG.profiles.some(p=>p.icalUrl)&&(!ST.lastSync||Date.now()-ST.lastSync>120000)) syncAll();
+  });
+  const sp=document.getElementById('stars-panel');
+  ['click','touchstart'].forEach(ev=>sp.addEventListener(ev,stBump,{passive:true}));
   if(CFG.profiles.some(p=>p.icalUrl)){
     document.getElementById('setup-screen').classList.remove('open');
-    renderCurrent();syncAll();
-    setInterval(syncAll,(CFG.syncMins||5)*60000);
-    setInterval(checkAlerts,30000);
+    renderCurrent();syncAll();startTimers();
   }
 }
 window.addEventListener('load',init);
