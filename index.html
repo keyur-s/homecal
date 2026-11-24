@@ -594,7 +594,7 @@ body.light .star.black{stroke:#000}
 
 <script>
 // ── CONFIG ──
-const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://homecal-proxy.cars-sushi5n.workers.dev/?url=',version:'3.9',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00',alertTone:'1',settingsPin:'1234',theme:'dark'};
+const DFLT={profiles:[{name:'Parent',color:'#4A90D9',icalUrl:''},{name:'Child 1',color:'#E94E77',icalUrl:''},{name:'Child 2',color:'#F5A623',icalUrl:''},{name:'Home',color:'#7ED321',icalUrl:''}],notesUrl:'',alertLeadMins:15,travelBufMins:20,syncMins:5,proxy:'https://homecal-proxy.cars-sushi5n.workers.dev/?url=',version:'3.10',facetime:[{name:'Mum',contact:''},{name:'Dad',contact:''}],nightFrom:'22:00',nightTo:'06:00',alertTone:'1',settingsPin:'1234',theme:'dark'};
 let CFG=()=>{try{return{...DFLT,...JSON.parse(localStorage.getItem('hc_cfg')||'{}')}}catch(e){return{...DFLT}}};
 CFG=CFG();
 CFG.version=DFLT.version; // never let a saved older version number override the real one
@@ -1682,6 +1682,17 @@ function doRedeem(){
   stBump();
 }
 
+// ── NEW DAY ──
+// When the calendar date rolls over (or the iPad wakes on a new day), jump every view to today
+let _lastDayKey=dkey(new Date());
+function checkNewDay(){
+  const k=dkey(new Date());
+  if(k===_lastDayKey) return;
+  _lastDayKey=k;
+  goToday();
+  renderStarBar();
+}
+
 // ── TIMERS ──
 let _syncTimer=null,_alertTimer=null;
 function startTimers(){
@@ -1713,10 +1724,11 @@ function init(){
   document.addEventListener('click', unlockAudio, {once:true});
   checkNightMode();
   renderStarBar();
-  setInterval(()=>{ checkNightMode(); updateNowLine(); renderStarBar(); }, 60000);
+  setInterval(()=>{ checkNewDay(); checkNightMode(); updateNowLine(); renderStarBar(); }, 60000);
   // Safari pauses timers while the iPad screen is off — sync as soon as it wakes
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState!=='visible') return;
+    checkNewDay();
     checkNightMode();
     if(CFG.profiles.some(p=>p.icalUrl)&&(!ST.lastSync||Date.now()-ST.lastSync>120000)) syncAll();
   });
